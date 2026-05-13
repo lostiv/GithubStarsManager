@@ -463,7 +463,9 @@ class BackendAdapter {
   async triggerWorkflowRun(owner: string, repo: string, workflowPath: string, branch: string): Promise<void> {
     if (!this._backendUrl) throw new Error('Backend not available');
 
-    const encodedPath = encodeURIComponent(workflowPath);
+    // GitHub API 只接受文件名（如 ci.yml），不接受完整路径（如 .github/workflows/ci.yml）
+    const fileName = workflowPath.split('/').pop() || workflowPath;
+    const encodedPath = encodeURIComponent(fileName);
     const res = await this.fetchWithTimeout(
       `${this._backendUrl}/proxy/github/repos/${owner}/${repo}/actions/workflows/${encodedPath}/dispatches`,
       {
