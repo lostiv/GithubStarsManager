@@ -253,7 +253,7 @@ export const ForkTimeline: React.FC = () => {
 
       // Pre-check sync status for all forks (out-of-date vs already up-to-date)
       const syncChecks: Promise<void>[] = updatedForks.map(async (fork) => {
-        if (!fork.fork) return;
+        if (!fork.fork || !fork.full_name?.includes('/')) return;
         const [owner, repo] = fork.full_name.split('/');
         const branch = fork.default_branch || 'main';
         try {
@@ -272,7 +272,7 @@ export const ForkTimeline: React.FC = () => {
               parent: { 
                 id: 0, 
                 full_name: result.parentFullName as string, 
-                name: (result.parentFullName as string).split('/')[1], 
+                name: (result.parentFullName as string)?.split('/')[1] || '',
                 html_url: result.parentHtmlUrl as string 
               } 
             } : f));
@@ -328,7 +328,7 @@ export const ForkTimeline: React.FC = () => {
 
   const loadWorkflows = async (forkId: number) => {
     const fork = forks.find(f => f.id === forkId);
-    if (!fork || !backend.isAvailable) return;
+    if (!fork || !backend.isAvailable || !fork.full_name?.includes('/')) return;
 
     setLoadingWorkflows(prev => new Set(prev).add(forkId));
     try {
@@ -352,6 +352,7 @@ export const ForkTimeline: React.FC = () => {
       toast(language === 'zh' ? '后端服务未连接，请检查后端状态。' : 'Backend service not connected. Please check the backend status.', 'error');
       return;
     }
+    if (!fork.full_name?.includes('/')) return;
 
     const defaultBranch = fork.default_branch || 'main';
     const [owner, repo] = fork.full_name.split('/');
@@ -446,7 +447,7 @@ export const ForkTimeline: React.FC = () => {
     }
 
     const fork = forks.find(f => f.id === forkId);
-    if (!fork) return;
+    if (!fork || !fork.full_name?.includes('/')) return;
 
     const branch = fork.default_branch || 'main';
     setRunningWorkflows(prev => new Set(prev).add(forkId));

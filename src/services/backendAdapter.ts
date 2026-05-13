@@ -6,6 +6,11 @@ import { useAppStore } from '../store/useAppStore';
 class BackendAdapter {
   private _backendUrl: string | null = null;
 
+  /** 对 owner/repo 做 URL 编码，防止特殊字符破坏代理路径 */
+  private encPath(owner: string, repo: string): string {
+    return `${encodeURIComponent(owner)}/${encodeURIComponent(repo)}`;
+  }
+
   async init(): Promise<void> {
     try {
       // Try common backend URLs
@@ -130,7 +135,7 @@ class BackendAdapter {
     if (!this._backendUrl) throw new Error('Backend not available');
 
     try {
-      const res = await this.fetchWithTimeout(`${this._backendUrl}/proxy/github/repos/${owner}/${repo}/readme`, {
+      const res = await this.fetchWithTimeout(`${this._backendUrl}/proxy/github/repos/${this.encPath(owner, repo)}/readme`, {
         method: 'POST',
         headers: this.getAuthHeaders(),
         body: JSON.stringify({ method: 'GET' })
@@ -152,7 +157,7 @@ class BackendAdapter {
     if (!this._backendUrl) throw new Error('Backend not available');
 
     try {
-      const res = await this.fetchWithTimeout(`${this._backendUrl}/proxy/github/repos/${owner}/${repo}/releases?page=${page}&per_page=${perPage}`, {
+      const res = await this.fetchWithTimeout(`${this._backendUrl}/proxy/github/repos/${this.encPath(owner, repo)}/releases?page=${page}&per_page=${perPage}`, {
         method: 'POST',
         headers: this.getAuthHeaders(),
         body: JSON.stringify({ method: 'GET' })
@@ -293,7 +298,7 @@ class BackendAdapter {
     if (!this._backendUrl) throw new Error('Backend not available');
 
     const res = await this.fetchWithTimeout(
-      `${this._backendUrl}/proxy/github/user/starred/${owner}/${repo}`,
+      `${this._backendUrl}/proxy/github/user/starred/${this.encPath(owner, repo)}`,
       {
         method: 'POST',
         headers: this.getAuthHeaders(),
@@ -307,7 +312,7 @@ class BackendAdapter {
     if (!this._backendUrl) throw new Error('Backend not available');
 
     const res = await this.fetchWithTimeout(
-      `${this._backendUrl}/proxy/github/user/starred/${owner}/${repo}`,
+      `${this._backendUrl}/proxy/github/user/starred/${this.encPath(owner, repo)}`,
       {
         method: 'POST',
         headers: this.getAuthHeaders(),
@@ -359,7 +364,7 @@ class BackendAdapter {
         parentOwner = parentFullName.split('/')[0];
       } else {
         const repoRes = await this.fetchWithTimeout(
-          `${this._backendUrl}/proxy/github/repos/${owner}/${repo}`,
+          `${this._backendUrl}/proxy/github/repos/${this.encPath(owner, repo)}`,
           {
             method: 'POST',
             headers: this.getAuthHeaders(),
@@ -374,8 +379,9 @@ class BackendAdapter {
         resultParentHtmlUrl = repoData.parent.html_url;
       }
 
+      const encodedBranch = encodeURIComponent(branch);
       const compareRes = await this.fetchWithTimeout(
-        `${this._backendUrl}/proxy/github/repos/${owner}/${repo}/compare/${parentOwner}:${branch}...${owner}:${branch}`,
+        `${this._backendUrl}/proxy/github/repos/${this.encPath(owner, repo)}/compare/${parentOwner}:${encodedBranch}...${owner}:${encodedBranch}`,
         {
           method: 'POST',
           headers: this.getAuthHeaders(),
@@ -399,7 +405,7 @@ class BackendAdapter {
     if (!this._backendUrl) throw new Error('Backend not available');
     try {
       const res = await this.fetchWithTimeout(
-        `${this._backendUrl}/proxy/github/repos/${owner}/${repo}/branches?per_page=100`,
+        `${this._backendUrl}/proxy/github/repos/${this.encPath(owner, repo)}/branches?per_page=100`,
         {
           method: 'POST',
           headers: this.getAuthHeaders(),
@@ -418,7 +424,7 @@ class BackendAdapter {
     if (!this._backendUrl) throw new Error('Backend not available');
     try {
       const res = await this.fetchWithTimeout(
-        `${this._backendUrl}/proxy/github/repos/${owner}/${repo}/actions/workflows?per_page=100`,
+        `${this._backendUrl}/proxy/github/repos/${this.encPath(owner, repo)}/actions/workflows?per_page=100`,
         {
           method: 'POST',
           headers: this.getAuthHeaders(),
@@ -437,7 +443,7 @@ class BackendAdapter {
     if (!this._backendUrl) throw new Error('Backend not available');
 
     const res = await this.fetchWithTimeout(
-      `${this._backendUrl}/proxy/github/repos/${owner}/${repo}/merge-upstream`,
+      `${this._backendUrl}/proxy/github/repos/${this.encPath(owner, repo)}/merge-upstream`,
       {
         method: 'POST',
         headers: this.getAuthHeaders(),
@@ -464,10 +470,11 @@ class BackendAdapter {
     if (!this._backendUrl) throw new Error('Backend not available');
 
     // GitHub API 只接受文件名（如 ci.yml），不接受完整路径（如 .github/workflows/ci.yml）
+    if (!workflowPath) throw new Error('workflowPath is required');
     const fileName = workflowPath.split('/').pop() || workflowPath;
     const encodedPath = encodeURIComponent(fileName);
     const res = await this.fetchWithTimeout(
-      `${this._backendUrl}/proxy/github/repos/${owner}/${repo}/actions/workflows/${encodedPath}/dispatches`,
+      `${this._backendUrl}/proxy/github/repos/${this.encPath(owner, repo)}/actions/workflows/${encodedPath}/dispatches`,
       {
         method: 'POST',
         headers: this.getAuthHeaders(),
