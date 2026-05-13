@@ -1024,8 +1024,9 @@ async getUserForks(): Promise<ForkRepo[]> {
         resultParentHtmlUrl = repoData.parent.html_url;
       }
 
+      const encodedBranch = encodeURIComponent(branch);
       const compareData = await this.makeRequest<{ behind_by: number }>(
-        `/repos/${owner}/${repo}/compare/${parentOwner}:${branch}...${owner}:${branch}`
+        `/repos/${owner}/${repo}/compare/${parentOwner}:${encodedBranch}...${owner}:${encodedBranch}`
       );
       
       return { 
@@ -1064,6 +1065,7 @@ async getUserForks(): Promise<ForkRepo[]> {
 
   async triggerWorkflowRun(owner: string, repo: string, workflowPath: string, branch: string): Promise<void> {
     // GitHub API 只接受文件名（如 ci.yml），不接受完整路径（如 .github/workflows/ci.yml）
+    if (!workflowPath) throw new Error('workflowPath is required');
     const fileName = workflowPath.split('/').pop() || workflowPath;
     const encodedPath = encodeURIComponent(fileName);
     await this.makeRequest<void>(
