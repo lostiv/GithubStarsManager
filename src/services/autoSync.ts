@@ -110,7 +110,16 @@ export async function syncFromBackend(): Promise<void> {
       _lastHash.repos = hashes.repos;
     }
     if (changed.releases && releasesResult.status === 'fulfilled') {
-      state.setReleases(releasesResult.value.releases);
+      const backendReleases = releasesResult.value.releases;
+      const backendReadIds = new Set(
+        backendReleases.filter((r: { is_read?: boolean; id: number }) => r.is_read).map((r: { is_read?: boolean; id: number }) => r.id)
+      );
+      const latestReadReleases = useAppStore.getState().readReleases;
+      const mergedReadReleases = new Set([...latestReadReleases, ...backendReadIds]);
+      const mergedReleases = backendReleases.map((r: { is_read?: boolean; id: number }) =>
+        mergedReadReleases.has(r.id) ? { ...r, is_read: true } : r
+      );
+      useAppStore.setState({ releases: mergedReleases, readReleases: mergedReadReleases });
       _lastHash.releases = hashes.releases;
     }
     if (changed.ai && aiResult.status === 'fulfilled') {
