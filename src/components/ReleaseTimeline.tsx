@@ -688,7 +688,7 @@ export const ReleaseTimeline: React.FC = () => {
 
             {/* Mark All Read Button */}
             <button
-              onClick={() => { markAllReleasesAsRead(); backend.markAllReleasesAsRead().catch(() => {}); }}
+              onClick={() => { markAllReleasesAsRead(); backend.markAllReleasesAsRead().catch((err) => { console.error('[ReleaseTimeline] markAllReleasesAsRead failed:', err); }); }}
               className="flex items-center space-x-2 px-4 py-2 text-brand-indigo bg-brand-indigo/10 rounded-lg hover:bg-brand-indigo/20 transition-colors"
             >
               <Check className="w-4 h-4" />
@@ -953,7 +953,7 @@ export const ReleaseTimeline: React.FC = () => {
                 onToggleReleaseNotes={() => toggleReleaseNotes(release.id)}
                 onToggleFullContent={(e) => toggleFullContent(release.id, e)}
                 onUnsubscribe={() => handleUnsubscribeRelease(release.repository.id)}
-                onMarkAsRead={() => { markReleaseAsRead(release.id); backend.markReleaseAsRead(release.id).catch(() => {}); }}
+                onMarkAsRead={() => { markReleaseAsRead(release.id); backend.markReleaseAsRead(release.id).catch((err) => { console.error('[ReleaseTimeline] markReleaseAsRead failed:', err); }); }}
                 language={language}
                 formatFileSize={formatFileSize}
               />
@@ -1037,7 +1037,7 @@ export const ReleaseTimeline: React.FC = () => {
                             onToggleReleaseNotes={() => toggleReleaseNotes(release.id)}
                             onToggleFullContent={(e) => toggleFullContent(release.id, e)}
                             onUnsubscribe={() => handleUnsubscribeRelease(release.repository.id)}
-                            onMarkAsRead={() => { markReleaseAsRead(release.id); backend.markReleaseAsRead(release.id).catch(() => {}); }}
+                            onMarkAsRead={() => { markReleaseAsRead(release.id); backend.markReleaseAsRead(release.id).catch((err) => { console.error('[ReleaseTimeline] markReleaseAsRead failed:', err); }); }}
                             language={language}
                             formatFileSize={formatFileSize}
                           />

@@ -532,7 +532,7 @@ export const ForkTimeline: React.FC = () => {
 
             {/* Mark All Read Button */}
             <button
-              onClick={() => { markAllForksAsRead(); backend.syncSettings({ readForks: [...useAppStore.getState().readForks] }).catch(() => {}); }}
+              onClick={() => { markAllForksAsRead(); backend.syncSettings({ readForks: [...useAppStore.getState().readForks] }).catch((err) => { console.error('[ForkTimeline] syncSettings failed:', err); }); }}
               className="flex items-center space-x-2 px-4 py-2 text-brand-indigo bg-brand-indigo/10 rounded-lg hover:bg-brand-indigo/20 transition-colors"
             >
               <Check className="w-4 h-4" />
@@ -707,7 +707,7 @@ export const ForkTimeline: React.FC = () => {
                 isWorkflowsExpanded={isWorkflowsExpanded}
                 onToggleWorkflows={() => toggleWorkflows(fork.id)}
                 onSyncUpstream={() => handleSyncUpstream(fork)}
-                onMarkAsRead={() => { markForkAsRead(fork.id); backend.syncSettings({ readForks: [...useAppStore.getState().readForks] }).catch(() => {}); }}
+                onMarkAsRead={() => { markForkAsRead(fork.id); backend.syncSettings({ readForks: [...useAppStore.getState().readForks] }).catch((err) => { console.error('[ForkTimeline] syncSettings failed:', err); }); }}
                 onRunWorkflow={(workflowPath, workflowName) => handleRunWorkflow(fork.id, workflowPath, workflowName)}
                 workflows={workflows}
                 isLoadingWorkflows={isLoadingWf}
