@@ -165,6 +165,13 @@ export async function syncFromBackend(): Promise<void> {
       if (typeof settings.collapsedSidebarCategoryCount === 'number' && settings.collapsedSidebarCategoryCount >= 1) {
         useAppStore.setState({ collapsedSidebarCategoryCount: settings.collapsedSidebarCategoryCount });
       }
+      if (Array.isArray(settings.readForks)) {
+        const backendForkReadIds = settings.readForks.filter((id): id is number => typeof id === 'number');
+        if (backendForkReadIds.length > 0) {
+          const merged = new Set([...useAppStore.getState().readForks, ...backendForkReadIds]);
+          useAppStore.setState({ readForks: merged });
+        }
+      }
       _lastHash.settings = hashes.settings;
     }
 

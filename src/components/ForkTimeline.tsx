@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
-import { Package, Search, X, RefreshCw, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Loader2, GitFork } from 'lucide-react';
+import { Package, Search, X, RefreshCw, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Loader2, GitFork, Check } from 'lucide-react';
 import { ForkRepo, WorkflowDefinition } from '../types';
 import { useAppStore } from '../store/useAppStore';
 import { backend } from '../services/backendAdapter';
@@ -530,6 +530,15 @@ export const ForkTimeline: React.FC = () => {
               </span>
             )}
 
+            {/* Mark All Read Button */}
+            <button
+              onClick={() => { markAllForksAsRead(); backend.syncSettings({ readForks: [...useAppStore.getState().readForks] }).catch((err) => { console.error('[ForkTimeline] syncSettings failed:', err); }); }}
+              className="flex items-center space-x-2 px-4 py-2 text-brand-indigo bg-brand-indigo/10 rounded-lg hover:bg-brand-indigo/20 transition-colors"
+            >
+              <Check className="w-4 h-4" />
+              <span>{t('全部已读', 'Mark All Read')}</span>
+            </button>
+
             {/* Refresh Button */}
             <button
               onClick={handleRefresh}
@@ -698,7 +707,7 @@ export const ForkTimeline: React.FC = () => {
                 isWorkflowsExpanded={isWorkflowsExpanded}
                 onToggleWorkflows={() => toggleWorkflows(fork.id)}
                 onSyncUpstream={() => handleSyncUpstream(fork)}
-                onMarkAsRead={() => markForkAsRead(fork.id)}
+                onMarkAsRead={() => { markForkAsRead(fork.id); backend.syncSettings({ readForks: [...useAppStore.getState().readForks] }).catch((err) => { console.error('[ForkTimeline] syncSettings failed:', err); }); }}
                 onRunWorkflow={(workflowPath, workflowName) => handleRunWorkflow(fork.id, workflowPath, workflowName)}
                 workflows={workflows}
                 isLoadingWorkflows={isLoadingWf}

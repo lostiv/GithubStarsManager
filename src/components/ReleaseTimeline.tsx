@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
-import { Package, Bell, Search, X, RefreshCw, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, LayoutGrid, CalendarDays, ChevronDown } from 'lucide-react';
+import { Package, Bell, Search, X, RefreshCw, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, LayoutGrid, CalendarDays, ChevronDown, Check } from 'lucide-react';
 import { Release } from '../types';
 import { useAppStore } from '../store/useAppStore';
 import { backend } from '../services/backendAdapter';
@@ -19,6 +19,7 @@ export const ReleaseTimeline: React.FC = () => {
     assetFilters,
     addReleases,
     markReleaseAsRead,
+    markAllReleasesAsRead,
     batchUnsubscribeReleases,
     removeReleasesByRepoId,
     updateRepository,
@@ -685,6 +686,15 @@ export const ReleaseTimeline: React.FC = () => {
               </span>
             </label>
 
+            {/* Mark All Read Button */}
+            <button
+              onClick={() => { markAllReleasesAsRead(); backend.markAllReleasesAsRead().catch((err) => { console.error('[ReleaseTimeline] markAllReleasesAsRead failed:', err); }); }}
+              className="flex items-center space-x-2 px-4 py-2 text-brand-indigo bg-brand-indigo/10 rounded-lg hover:bg-brand-indigo/20 transition-colors"
+            >
+              <Check className="w-4 h-4" />
+              <span>{t('全部已读', 'Mark All Read')}</span>
+            </button>
+
             {/* Refresh Button */}
             <button
               onClick={handleRefresh}
@@ -943,7 +953,7 @@ export const ReleaseTimeline: React.FC = () => {
                 onToggleReleaseNotes={() => toggleReleaseNotes(release.id)}
                 onToggleFullContent={(e) => toggleFullContent(release.id, e)}
                 onUnsubscribe={() => handleUnsubscribeRelease(release.repository.id)}
-                onMarkAsRead={() => { markReleaseAsRead(release.id); backend.markReleaseAsRead(release.id).catch(() => {}); }}
+                onMarkAsRead={() => { markReleaseAsRead(release.id); backend.markReleaseAsRead(release.id).catch((err) => { console.error('[ReleaseTimeline] markReleaseAsRead failed:', err); }); }}
                 language={language}
                 formatFileSize={formatFileSize}
               />
@@ -1027,7 +1037,7 @@ export const ReleaseTimeline: React.FC = () => {
                             onToggleReleaseNotes={() => toggleReleaseNotes(release.id)}
                             onToggleFullContent={(e) => toggleFullContent(release.id, e)}
                             onUnsubscribe={() => handleUnsubscribeRelease(release.repository.id)}
-                            onMarkAsRead={() => { markReleaseAsRead(release.id); backend.markReleaseAsRead(release.id).catch(() => {}); }}
+                            onMarkAsRead={() => { markReleaseAsRead(release.id); backend.markReleaseAsRead(release.id).catch((err) => { console.error('[ReleaseTimeline] markReleaseAsRead failed:', err); }); }}
                             language={language}
                             formatFileSize={formatFileSize}
                           />

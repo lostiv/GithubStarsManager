@@ -54,6 +54,7 @@ export interface Release {
   zipball_url?: string;
   tarball_url?: string;
   prerelease?: boolean;
+  draft?: boolean;
   repository: {
     id: number;
     full_name: string;
