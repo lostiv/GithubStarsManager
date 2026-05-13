@@ -5,6 +5,7 @@ import { Repository } from '../types';
 import { GitHubApiService } from '../services/githubApi';
 import { backend } from '../services/backendAdapter';
 import { useDialog } from '../hooks/useDialog';
+import { forceSyncToBackend } from '../services/autoSync';
 
 export const Header: React.FC = () => {
   const {
@@ -163,6 +164,13 @@ export const Header: React.FC = () => {
       });
 
       setRepositories(mergedRepositories);
+
+      // Force-push to backend immediately (bypass 2s debounce) so data survives a page refresh
+      forceSyncToBackend().catch(console.error);
+
+      // Note: Release fetching is now handled by the Refresh button in Release Timeline
+      // Header sync only syncs the starred repos list
+
       setLastSync(new Date().toISOString());
 
       const existingIds = new Set(repositories.map(r => r.id));
