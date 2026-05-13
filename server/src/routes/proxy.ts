@@ -46,8 +46,10 @@ function buildApiUrl(baseUrl: string, pathWithVersion: string): string {
 router.post('/api/proxy/github/*', async (req, res) => {
   try {
     const db = getDb();
-    const githubPath = (req.params as Record<string, string>)[0]; // wildcard capture
-    
+    // 使用 req.url 原始未解码路径，避免 Express 解码 %2F 等字符后被错误拼入 GitHub API URL
+    const reqUrl = new URL(req.url, 'http://localhost');
+    const githubPath = reqUrl.pathname.replace(/^\/api\/proxy\/github\//, '');
+
     // Read and decrypt GitHub token from settings
     const tokenRow = db.prepare('SELECT value FROM settings WHERE key = ?').get('github_token') as { value: string } | undefined;
     if (!tokenRow?.value) {
@@ -63,9 +65,8 @@ router.post('/api/proxy/github/*', async (req, res) => {
       return;
     }
 
-    // Build target URL with query params
-    const queryString = new URL(req.url, 'http://localhost').search;
-    const targetUrl = `https://api.github.com/${githubPath}${queryString}`;
+    // Build target URL with raw path to preserve URL encoding
+    const targetUrl = `https://api.github.com/${githubPath}${reqUrl.search}`;
 
     const proxyBody = req.body as { method?: string; headers?: Record<string, string>; body?: unknown };
     const method = proxyBody.method || 'GET';

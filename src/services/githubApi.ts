@@ -1063,8 +1063,9 @@ async getUserForks(): Promise<ForkRepo[]> {
   }
 
   async triggerWorkflowRun(owner: string, repo: string, workflowPath: string, branch: string): Promise<void> {
-    // workflowPath is the file path (e.g. ".github/workflows/ci.yml") — URL-encode it
-    const encodedPath = encodeURIComponent(workflowPath);
+    // GitHub API 只接受文件名（如 ci.yml），不接受完整路径（如 .github/workflows/ci.yml）
+    const fileName = workflowPath.split('/').pop() || workflowPath;
+    const encodedPath = encodeURIComponent(fileName);
     await this.makeRequest<void>(
       `/repos/${owner}/${repo}/actions/workflows/${encodedPath}/dispatches`,
       {
