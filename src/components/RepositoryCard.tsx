@@ -997,7 +997,7 @@ const RepositoryCardComponent: React.FC<RepositoryCardProps> = ({
                   className="w-6 h-6 flex items-center justify-center bg-light-surface dark:bg-white/[0.04] rounded text-gray-700 dark:text-text-tertiary hover:bg-gray-200 dark:hover:bg-white/10 dark:hover:text-gray-700 transition-colors cursor-default"
                   title={displayName}
                 >
-                  <IconComponent className="w-3 h-3" />
+                  <IconComponent className="w-3 h-3 pointer-events-none" />
                 </div>
               );
             })}
