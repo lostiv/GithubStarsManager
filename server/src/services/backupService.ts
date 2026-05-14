@@ -9,6 +9,44 @@ let lastBackupTime: number | null = null;
 let lastActiveConfigId: string | null = null;
 let isBackingUp = false;
 
+function loadStateFromDb(): void {
+  try {
+    const db = getDb();
+    const rows = db.prepare("SELECT key, value FROM settings WHERE key IN ('last_backup_time', 'last_backup_config_id')").all() as { key: string; value: string }[];
+    for (const row of rows) {
+      if (row.key === 'last_backup_time') {
+        lastBackupTime = parseInt(row.value, 10) || null;
+      } else if (row.key === 'last_backup_config_id') {
+        lastActiveConfigId = row.value || null;
+      }
+    }
+  } catch (err) {
+    console.debug('[Backup] Failed to load state from DB:', err);
+  }
+}
+
+function setLastBackupTime(time: number): void {
+  lastBackupTime = time;
+  try {
+    const db = getDb();
+    db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('last_backup_time', ?)").run(String(time));
+  } catch { /* ignore */ }
+}
+
+function persistConfigId(configId: string): void {
+  lastActiveConfigId = configId;
+  try {
+    const db = getDb();
+    db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('last_backup_config_id', ?)").run(configId);
+  } catch { /* ignore */ }
+}
+
+function formatLocalTimestamp(): string {
+  const now = new Date();
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}`;
+}
+
 function maskApiKey(key: string | null | undefined): string {
   if (!key || typeof key !== 'string') return '';
   if (key.length <= 4) return '****';
@@ -282,19 +320,23 @@ export async function performAutoBackup(): Promise<{
     // Reset last backup time if active config changed
     if (lastActiveConfigId !== activeConfig.id) {
       lastBackupTime = null;
-      lastActiveConfigId = activeConfig.id;
+      persistConfigId(activeConfig.id);
+      try {
+        const db = getDb();
+        db.prepare("DELETE FROM settings WHERE key = 'last_backup_time'").run();
+      } catch { /* ignore */ }
     }
 
     const db = getDb();
     const data = exportAllData(db, false);
-    const timestamp = new Date().toISOString().replace(/:/g, '-').replace(/\..+/, '');
+    const timestamp = formatLocalTimestamp();
     const filename = `github-stars-backup-${timestamp}.json`;
 
     const basePath = activeConfig.path.endsWith('/') ? activeConfig.path : `${activeConfig.path}/`;
 
     await webdavUpload(activeConfig.url, activeConfig.username, activeConfig.password, `${basePath}${filename}`, JSON.stringify(data));
 
-    lastBackupTime = Date.now();
+    setLastBackupTime(Date.now());
 
     // Read retention count from settings
     const retentionRow = db.prepare("SELECT value FROM settings WHERE key = 'auto_backup_retention_count'").get() as { value: string } | undefined;
@@ -329,6 +371,9 @@ export async function performAutoBackup(): Promise<{
 export function startBackupScheduler(): void {
   if (schedulerTimer) return;
 
+  // Load persisted state from DB on startup
+  loadStateFromDb();
+
   // Immediate check on startup
   checkAndBackup().catch((err) => console.warn('[Backup] Initial backup check failed:', err));
 
@@ -356,7 +401,10 @@ async function checkAndBackup(): Promise<void> {
   // 检测活跃配置是否变更，若变更则重置上次备份时间，确保新配置尽快备份
   if (lastActiveConfigId !== activeConfig.id) {
     lastBackupTime = null;
-    lastActiveConfigId = activeConfig.id;
+    persistConfigId(activeConfig.id);
+    try {
+      db.prepare("DELETE FROM settings WHERE key = 'last_backup_time'").run();
+    } catch { /* ignore */ }
   }
 
   const intervalRow = db.prepare("SELECT value FROM settings WHERE key = 'auto_backup_interval_hours'").get() as { value: string } | undefined;

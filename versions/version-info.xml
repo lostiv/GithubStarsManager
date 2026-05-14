@@ -355,4 +355,14 @@
     </changelog>
     <downloadUrl>https://github.com/AmintaCCCP/GithubStarsManager/releases/download/v0.6.1/github-stars-manager-0.6.1.dmg</downloadUrl>
   </version>
+  <version>
+    <number>0.6.3</number>
+    <releaseDate>2026-05-14</releaseDate>
+    <changelog>
+      <item>修复自动备份因lastBackupTime仅存内存导致重启后频繁触发</item>
+      <item>备份文件名时间戳从UTC改用服务器本地时区</item>
+      <item>前端手动备份/导出文件名也改用浏览器本地时区</item>
+    </changelog>
+    <downloadUrl>https://github.com/AmintaCCCP/GithubStarsManager/releases/download/v0.6.3/github-stars-manager-0.6.3.dmg</downloadUrl>
+  </version>
 </versions>

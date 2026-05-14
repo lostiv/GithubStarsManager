@@ -151,7 +151,10 @@ export const BackupPanel: React.FC<BackupPanelProps> = ({ t }) => {
         exportedAt: new Date().toISOString(),
         version: '1.0'
       };
-      const filename = `github-stars-backup-${new Date().toISOString().replace(/:/g, '-').replace(/\..+/, '')}.json`;
+      const now = new Date();
+      const pad = (n: number) => String(n).padStart(2, '0');
+      const ts = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}`;
+      const filename = `github-stars-backup-${ts}.json`;
       const success = await webdavService.uploadFile(filename, JSON.stringify(backupData, null, 2));
       if (success) {
         setLastBackup(new Date().toISOString());
