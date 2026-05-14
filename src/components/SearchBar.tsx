@@ -967,6 +967,7 @@ export const SearchBar: React.FC = () => {
               onClick={clearFilters}
               className="flex items-center space-x-1 px-3 py-2 text-sm text-gray-700 dark:text-text-tertiary hover:text-gray-900 dark:hover:text-gray-200 transition-colors"
               title={t('清除全部', 'Clear all')}
+              aria-label={t('清除全部', 'Clear all')}
             >
               <X className="w-4 h-4 pointer-events-none" />
               <span>{t('清除全部', 'Clear all')}</span>

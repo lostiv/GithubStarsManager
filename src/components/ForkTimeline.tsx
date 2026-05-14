@@ -461,6 +461,7 @@ export const ForkTimeline: React.FC = () => {
             disabled={forkIsRefreshing}
             className="flex items-center space-x-2 px-6 py-3 bg-brand-indigo text-white rounded-lg hover:bg-brand-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             title={t('刷新Fork', 'Refresh Forks')}
+            aria-label={t('刷新Fork', 'Refresh Forks')}
           >
             <RefreshCw className={`w-5 h-5 ${forkIsRefreshing ? 'animate-spin' : ''} pointer-events-none`} />
             <span>{forkIsRefreshing ? t('刷新中...', 'Refreshing...') : t('刷新Fork', 'Refresh Forks')}</span>
@@ -508,6 +509,7 @@ export const ForkTimeline: React.FC = () => {
               }}
               className="flex items-center space-x-2 px-4 py-2 text-brand-indigo bg-brand-indigo/10 rounded-lg hover:bg-brand-indigo/20 transition-colors"
               title={t('全部已读', 'Mark All Read')}
+              aria-label={t('全部已读', 'Mark All Read')}
             >
               <Check className="w-4 h-4 pointer-events-none" />
               <span>{t('全部已读', 'Mark All Read')}</span>
@@ -519,6 +521,7 @@ export const ForkTimeline: React.FC = () => {
               disabled={forkIsRefreshing}
               className="flex items-center space-x-2 px-4 py-2 bg-brand-indigo text-white rounded-lg hover:bg-brand-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               title={t('刷新', 'Refresh')}
+              aria-label={t('刷新', 'Refresh')}
             >
               <RefreshCw className={`w-4 h-4 ${forkIsRefreshing ? 'animate-spin' : ''} pointer-events-none`} />
               <span>{forkIsRefreshing ? t('刷新中...', 'Refreshing...') : t('刷新', 'Refresh')}</span>
@@ -548,6 +551,7 @@ export const ForkTimeline: React.FC = () => {
                 }}
                 className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-text-quaternary hover:text-gray-700 dark:text-text-secondary dark:hover:text-gray-300"
                 title={t('清除搜索', 'Clear search')}
+                aria-label={t('清除搜索', 'Clear search')}
               >
                 <X className="w-4 h-4 pointer-events-none" />
               </button>
@@ -598,6 +602,7 @@ export const ForkTimeline: React.FC = () => {
                   disabled={clampedPage === 1}
                   className="p-2 rounded-lg bg-light-surface text-gray-700 dark:bg-white/[0.04] dark:text-text-tertiary hover:bg-gray-200 dark:hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed"
                   title={t('第一页', 'First page')}
+                  aria-label={t('第一页', 'First page')}
                 >
                   <ChevronsLeft className="w-4 h-4 pointer-events-none" />
                 </button>
@@ -606,6 +611,7 @@ export const ForkTimeline: React.FC = () => {
                   disabled={clampedPage === 1}
                   className="p-2 rounded-lg bg-light-surface text-gray-700 dark:bg-white/[0.04] dark:text-text-tertiary hover:bg-gray-200 dark:hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed"
                   title={t('上一页', 'Previous page')}
+                  aria-label={t('上一页', 'Previous page')}
                 >
                   <ChevronLeft className="w-4 h-4 pointer-events-none" />
                 </button>
@@ -632,6 +638,7 @@ export const ForkTimeline: React.FC = () => {
                   disabled={clampedPage === totalPages}
                   className="p-2 rounded-lg bg-light-surface text-gray-700 dark:bg-white/[0.04] dark:text-text-tertiary hover:bg-gray-200 dark:hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed"
                   title={t('下一页', 'Next page')}
+                  aria-label={t('下一页', 'Next page')}
                 >
                   <ChevronRight className="w-4 h-4 pointer-events-none" />
                 </button>
@@ -640,6 +647,7 @@ export const ForkTimeline: React.FC = () => {
                   disabled={clampedPage === totalPages}
                   className="p-2 rounded-lg bg-light-surface text-gray-700 dark:bg-white/[0.04] dark:text-text-tertiary hover:bg-gray-200 dark:hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed"
                   title={t('最后一页', 'Last page')}
+                  aria-label={t('最后一页', 'Last page')}
                 >
                   <ChevronsRight className="w-4 h-4 pointer-events-none" />
                 </button>

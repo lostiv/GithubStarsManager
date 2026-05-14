@@ -398,9 +398,16 @@ export const SubscriptionRepoCard: React.FC<SubscriptionRepoCardProps> = ({ repo
                     : 'bg-gray-100 text-gray-700 dark:bg-white/[0.04] dark:text-text-secondary hover:bg-gray-200 hover:text-gray-900 dark:hover:bg-white/[0.08] dark:hover:text-text-primary'
                 }`}
                 title={
-                  isAnalyzed 
-                    ? t('重新分析', 'Re-analyze') 
-                    : isFailed 
+                  isAnalyzed
+                    ? t('重新分析', 'Re-analyze')
+                    : isFailed
+                    ? t('重新分析', 'Re-analyze')
+                    : t('AI分析', 'AI Analyze')
+                }
+                aria-label={
+                  isAnalyzed
+                    ? t('重新分析', 'Re-analyze')
+                    : isFailed
                     ? t('重新分析', 'Re-analyze')
                     : t('AI分析', 'AI Analyze')
                 }
@@ -421,6 +428,7 @@ export const SubscriptionRepoCard: React.FC<SubscriptionRepoCardProps> = ({ repo
                 onClick={handleOpenInZRead}
                 className="hidden sm:flex items-center justify-center w-8 h-8 rounded-lg bg-gray-100 text-gray-700 dark:bg-white/[0.04] dark:text-text-secondary hover:bg-gray-200 hover:text-gray-900 dark:hover:bg-white/[0.08] dark:hover:text-text-primary transition-colors"
                 title={t('在ZRead打开', 'Open in ZRead')}
+                aria-label={t('在ZRead打开', 'Open in ZRead')}
               >
                 <BookOpen className="w-4 h-4 pointer-events-none" />
               </button>
@@ -432,6 +440,7 @@ export const SubscriptionRepoCard: React.FC<SubscriptionRepoCardProps> = ({ repo
                 rel="noopener noreferrer"
                 className="hidden sm:flex items-center justify-center w-8 h-8 rounded-lg bg-gray-100 text-gray-700 dark:bg-white/[0.04] dark:text-text-secondary hover:bg-gray-200 hover:text-gray-900 dark:hover:bg-white/[0.08] dark:hover:text-text-primary transition-colors"
                 title={t('在GitHub打开', 'Open on GitHub')}
+                aria-label={t('在GitHub打开', 'Open on GitHub')}
               >
                 <ExternalLink className="w-4 h-4 pointer-events-none" />
               </a>
@@ -446,6 +455,7 @@ export const SubscriptionRepoCard: React.FC<SubscriptionRepoCardProps> = ({ repo
                     : 'bg-light-surface text-gray-500 dark:bg-white/[0.04] dark:text-text-tertiary hover:bg-gray-100 dark:hover:bg-white/[0.08] hover:text-gray-700 dark:hover:text-text-secondary'
                 }`}
                 title={isStarred ? t('取消Star', 'Unstar') : t('添加Star', 'Add Star')}
+                aria-label={isStarred ? t('取消Star', 'Unstar') : t('添加Star', 'Add Star')}
               >
                 <span className="pointer-events-none">
                   {isStarring ? (

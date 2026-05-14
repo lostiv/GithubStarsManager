@@ -189,6 +189,7 @@ export const BulkActionToolbar: React.FC<BulkActionToolbarProps> = ({
                 disabled={isProcessing}
                 className="flex items-center space-x-1 px-2 sm:px-3 py-1.5 text-xs sm:text-sm text-gray-700 dark:text-text-tertiary hover:bg-light-surface dark:hover:bg-white/10 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 title={t('全选当前页面', 'Select all on page')}
+                aria-label={t('全选当前页面', 'Select all on page')}
               >
                 <span className="pointer-events-none"><CheckSquare className="w-3 h-3 sm:w-4 sm:h-4" /></span>
                 <span>{t('全选', 'Select All')}</span>
@@ -198,6 +199,7 @@ export const BulkActionToolbar: React.FC<BulkActionToolbarProps> = ({
                 disabled={isProcessing}
                 className="flex items-center space-x-1 px-2 sm:px-3 py-1.5 text-xs sm:text-sm text-gray-700 dark:text-text-tertiary hover:bg-light-surface dark:hover:bg-white/10 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 title={t('取消选择所有', 'Deselect all')}
+                aria-label={t('取消选择所有', 'Deselect all')}
               >
                 <span className="pointer-events-none"><Square className="w-3 h-3 sm:w-4 sm:h-4" /></span>
                 <span>{t('不全选', 'Deselect All')}</span>
@@ -216,6 +218,7 @@ export const BulkActionToolbar: React.FC<BulkActionToolbarProps> = ({
                   : 'bg-gray-100 text-gray-700 dark:bg-white/[0.04] dark:text-text-secondary hover:bg-gray-200 hover:text-gray-900 dark:hover:bg-white/[0.08] dark:hover:text-text-primary'
               } disabled:opacity-50 disabled:cursor-not-allowed`}
               title={t('批量取消 Star', 'Batch Unstar')}
+              aria-label={t('批量取消 Star', 'Batch Unstar')}
             >
               {isProcessing && showConfirm === 'unstar' ? (
                 <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />
@@ -233,6 +236,7 @@ export const BulkActionToolbar: React.FC<BulkActionToolbarProps> = ({
                   : 'bg-gray-100 text-gray-700 dark:bg-white/[0.04] dark:text-text-secondary hover:bg-gray-200 hover:text-gray-900 dark:hover:bg-white/[0.08] dark:hover:text-text-primary'
               } disabled:opacity-50 disabled:cursor-not-allowed`}
               title={t('批量分类', 'Batch Categorize')}
+              aria-label={t('批量分类', 'Batch Categorize')}
             >
               {isProcessing && showConfirm === 'categorize' ? (
                 <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />
@@ -250,6 +254,7 @@ export const BulkActionToolbar: React.FC<BulkActionToolbarProps> = ({
                   : 'bg-gray-100 text-gray-700 dark:bg-white/[0.04] dark:text-text-secondary hover:bg-gray-200 hover:text-gray-900 dark:hover:bg-white/[0.08] dark:hover:text-text-primary'
               } disabled:opacity-50 disabled:cursor-not-allowed`}
               title={t('批量 AI 分析', 'Batch AI Analysis')}
+              aria-label={t('批量 AI 分析', 'Batch AI Analysis')}
             >
               {isProcessing && showConfirm === 'ai-summary' ? (
                 <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />
@@ -267,6 +272,7 @@ export const BulkActionToolbar: React.FC<BulkActionToolbarProps> = ({
                   : 'bg-gray-100 text-gray-700 dark:bg-white/[0.04] dark:text-text-secondary hover:bg-gray-200 hover:text-gray-900 dark:hover:bg-white/[0.08] dark:hover:text-text-primary'
               } disabled:opacity-50 disabled:cursor-not-allowed`}
               title={t('批量订阅 Release', 'Batch Subscribe Releases')}
+              aria-label={t('批量订阅 Release', 'Batch Subscribe Releases')}
             >
               {isProcessing && showConfirm === 'subscribe' ? (
                 <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />
@@ -284,6 +290,7 @@ export const BulkActionToolbar: React.FC<BulkActionToolbarProps> = ({
                   : 'bg-gray-100 text-gray-700 dark:bg-white/[0.04] dark:text-text-secondary hover:bg-gray-200 hover:text-gray-900 dark:hover:bg-white/[0.08] dark:hover:text-text-primary'
               } disabled:opacity-50 disabled:cursor-not-allowed`}
               title={t('批量取消订阅 Release', 'Batch Unsubscribe Releases')}
+              aria-label={t('批量取消订阅 Release', 'Batch Unsubscribe Releases')}
             >
               {isProcessing && showConfirm === 'unsubscribe' ? (
                 <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />
@@ -301,6 +308,7 @@ export const BulkActionToolbar: React.FC<BulkActionToolbarProps> = ({
                   : 'bg-gray-100 text-gray-700 dark:bg-white/[0.04] dark:text-text-secondary hover:bg-gray-200 hover:text-gray-900 dark:hover:bg-white/[0.08] dark:hover:text-text-primary'
               } disabled:opacity-50 disabled:cursor-not-allowed`}
               title={t('批量锁定分类', 'Batch Lock Categories')}
+              aria-label={t('批量锁定分类', 'Batch Lock Categories')}
             >
               {isProcessing && showConfirm === 'lock-category' ? (
                 <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />
@@ -318,6 +326,7 @@ export const BulkActionToolbar: React.FC<BulkActionToolbarProps> = ({
                   : 'bg-gray-100 text-gray-700 dark:bg-white/[0.04] dark:text-text-secondary hover:bg-gray-200 hover:text-gray-900 dark:hover:bg-white/[0.08] dark:hover:text-text-primary'
               } disabled:opacity-50 disabled:cursor-not-allowed`}
               title={t('批量解锁分类', 'Batch Unlock Categories')}
+              aria-label={t('批量解锁分类', 'Batch Unlock Categories')}
             >
               {isProcessing && showConfirm === 'unlock-category' ? (
                 <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />
@@ -335,6 +344,7 @@ export const BulkActionToolbar: React.FC<BulkActionToolbarProps> = ({
                   : 'bg-gray-100 text-gray-700 dark:bg-white/[0.04] dark:text-text-secondary hover:bg-gray-200 hover:text-gray-900 dark:hover:bg-white/[0.08] dark:hover:text-text-primary'
               } disabled:opacity-50 disabled:cursor-not-allowed`}
               title={t('批量还原', 'Bulk Restore')}
+              aria-label={t('批量还原', 'Bulk Restore')}
             >
               {isProcessing && showConfirm === 'restore' ? (
                 <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />
@@ -350,6 +360,7 @@ export const BulkActionToolbar: React.FC<BulkActionToolbarProps> = ({
               disabled={isProcessing}
               className="flex-shrink-0 p-2 text-gray-500 dark:text-text-tertiary hover:bg-light-surface dark:hover:bg-white/10 rounded-lg transition-colors disabled:opacity-50"
               title={t('关闭工具栏', 'Close toolbar')}
+              aria-label={t('关闭工具栏', 'Close toolbar')}
             >
               <span className="pointer-events-none"><X className="w-4 h-4 sm:w-5 sm:h-5" /></span>
             </button>

@@ -65,6 +65,7 @@ export const DiscoverySidebar: React.FC<DiscoverySidebarProps> = ({
             disabled={anyLoading || isAnalyzing}
             className="p-1.5 rounded-lg bg-gray-100 text-gray-700 dark:bg-white/[0.04] dark:text-text-secondary hover:bg-gray-200 hover:text-gray-900 dark:hover:bg-white/[0.08] dark:hover:text-text-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             title={t('刷新全部', 'Refresh All')}
+            aria-label={t('刷新全部', 'Refresh All')}
           >
             <RefreshCw className={`w-4 h-4 ${anyLoading ? 'animate-spin' : ''}`} />
           </button>
@@ -80,6 +81,7 @@ export const DiscoverySidebar: React.FC<DiscoverySidebarProps> = ({
                 key={channel.id}
                 onClick={() => onChannelSelect(channel.id)}
                 title={language === 'zh' ? channel.name : channel.nameEn}
+                aria-label={language === 'zh' ? channel.name : channel.nameEn}
                 className={`flex w-full items-center justify-between px-3 py-2 rounded-lg text-left transition-all duration-200 ${
                   isSelected
                     ? 'bg-gray-100 text-gray-900 dark:bg-white/[0.08] dark:text-text-primary font-medium'
