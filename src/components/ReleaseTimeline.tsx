@@ -41,7 +41,6 @@ export const ReleaseTimeline: React.FC = () => {
 
   const { toast, confirm } = useDialog();
 
-  const [lastRefreshTime, setLastRefreshTime] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(20);
   // 独立的展开状态：下载资产和更新日志分开控制（本地状态，不持久化）
@@ -340,6 +339,18 @@ export const ReleaseTimeline: React.FC = () => {
     setCurrentPage(1);
   };
 
+  // 从仓库同步时间中派生"上次刷新"时间（仅统计已订阅 Release 的仓库）
+  const lastReleaseFetchTime = useMemo(() => {
+    let latest: string | null = null;
+    for (const repo of repositories) {
+      if (!releaseSubscriptions.has(repo.id)) continue;
+      if (repo.last_release_fetch_time && (!latest || repo.last_release_fetch_time > latest)) {
+        latest = repo.last_release_fetch_time;
+      }
+    }
+    return latest;
+  }, [repositories, releaseSubscriptions]);
+
   const handleRefresh = async () => {
     if (!backend.isAvailable) {
       toast(language === 'zh' ? '后端服务未连接，请检查后端状态。' : 'Backend service not connected. Please check the backend status.', 'error');
@@ -382,8 +393,6 @@ export const ReleaseTimeline: React.FC = () => {
       if (actuallyNewReleases.length > 0) {
         addReleases(actuallyNewReleases);
       }
-
-      setLastRefreshTime(now);
 
       // Build success message with failed repos info
       let message: string;
@@ -608,9 +617,9 @@ export const ReleaseTimeline: React.FC = () => {
                <RefreshCw className={`w-5 h-5 ${releaseIsRefreshing ? 'animate-spin' : ''}`} />
                <span>{releaseIsRefreshing ? t('刷新中...', 'Refreshing...') : t('刷新Release', 'Refresh Releases')}</span>
              </button>
-            {lastRefreshTime && (
+            {lastReleaseFetchTime && (
               <p className="text-sm text-gray-500 dark:text-text-tertiary">
-                {t('上次刷新:', 'Last refresh:')} {formatDistanceToNow(new Date(lastRefreshTime), { addSuffix: true })}
+                {t('上次刷新:', 'Last refresh:')} {formatDistanceToNow(new Date(lastReleaseFetchTime), { addSuffix: true })}
               </p>
             )}
           </div>
@@ -662,9 +671,9 @@ export const ReleaseTimeline: React.FC = () => {
           </div>
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             {/* Last Refresh Time */}
-            {lastRefreshTime && (
+            {lastReleaseFetchTime && (
               <span className="w-full text-sm text-gray-500 dark:text-text-tertiary lg:w-auto">
-                {t('上次刷新:', 'Last refresh:')} {formatDistanceToNow(new Date(lastRefreshTime), { addSuffix: true })}
+                {t('上次刷新:', 'Last refresh:')} {formatDistanceToNow(new Date(lastReleaseFetchTime), { addSuffix: true })}
               </span>
             )}
 

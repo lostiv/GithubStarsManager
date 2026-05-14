@@ -29,7 +29,6 @@ export const ForkTimeline: React.FC = () => {
 
   const { toast, confirm } = useDialog();
 
-  const [lastRefreshTime, setLastRefreshTime] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(20);
   // Workflow expansion state (local UI state)
@@ -67,6 +66,17 @@ export const ForkTimeline: React.FC = () => {
   const expandedRepositories = forkExpandedRepositories;
 
   const t = useCallback((zh: string, en: string) => language === 'zh' ? zh : en, [language]);
+
+  // 从后端同步时间中派生"上次刷新"时间（取所有 fork 中最新的 fetched_at）
+  const lastRefreshTime = useMemo(() => {
+    let latest: string | null = null;
+    for (const f of forks) {
+      if (f.fetched_at && (!latest || f.fetched_at > latest)) {
+        latest = f.fetched_at;
+      }
+    }
+    return latest;
+  }, [forks]);
 
   // Filter and sort forks
   const filteredForks = useMemo(() => {
@@ -193,8 +203,6 @@ export const ForkTimeline: React.FC = () => {
       const newCount = refreshed.filter(f => !existingIds.has(f.id)).length;
 
       setForks(refreshed);
-      const now = new Date().toISOString();
-      setLastRefreshTime(now);
 
       // Pre-check sync status for all forks (out-of-date vs already up-to-date)
       const parentUpdates = new Map<number, { fullName: string; htmlUrl: string }>();

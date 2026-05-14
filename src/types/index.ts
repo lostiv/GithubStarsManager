@@ -106,6 +106,7 @@ export interface ForkRepo {
   };
   has_unread?: boolean;
   upstream_updated_at?: string; // last time we checked/fetched upstream updates
+  fetched_at?: string; // 后端最后同步时间
 }
 
 export interface WorkflowDefinition {

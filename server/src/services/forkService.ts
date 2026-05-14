@@ -112,6 +112,7 @@ export async function refreshForksFromGitHub(): Promise<{ forks: Record<string, 
         ...raw,
         has_unread: !isRead,
         upstream_updated_at: upstreamPushedAt,
+        fetched_at: now,
       });
     }
   });
