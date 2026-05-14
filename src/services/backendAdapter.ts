@@ -957,6 +957,74 @@ class BackendAdapter {
       retainedCount?: number;
     }>;
   }
+
+  // Auto-sync settings
+
+  async fetchAutoSyncSettings(): Promise<{
+    auto_sync_enabled_repos: boolean;
+    auto_sync_enabled_forks: boolean;
+    auto_sync_enabled_releases: boolean;
+    auto_sync_interval_minutes: number;
+  }> {
+    if (!this._backendUrl) throw new Error('Backend not available');
+
+    const res = await this.fetchWithTimeout(`${this._backendUrl}/auto-sync/settings`, {
+      headers: this.getAuthHeaders()
+    });
+    if (!res.ok) await this.throwTranslatedError(res, 'Fetch auto-sync settings error');
+    return res.json() as Promise<{
+      auto_sync_enabled_repos: boolean;
+      auto_sync_enabled_forks: boolean;
+      auto_sync_enabled_releases: boolean;
+      auto_sync_interval_minutes: number;
+    }>;
+  }
+
+  async updateAutoSyncSettings(settings: {
+    auto_sync_enabled_repos?: boolean;
+    auto_sync_enabled_forks?: boolean;
+    auto_sync_enabled_releases?: boolean;
+    auto_sync_interval_minutes?: number;
+  }): Promise<void> {
+    if (!this._backendUrl) return;
+
+    const res = await this.fetchWithTimeout(`${this._backendUrl}/auto-sync/settings`, {
+      method: 'PUT',
+      headers: this.getAuthHeaders(),
+      body: JSON.stringify(settings),
+    });
+    if (!res.ok) await this.throwTranslatedError(res, 'Update auto-sync settings error');
+  }
+
+  async fetchAutoSyncStatus(): Promise<{
+    lastSyncTime: string | null;
+    nextScheduledTime: string | null;
+    isEnabled: boolean;
+    enabledRepos: boolean;
+    enabledForks: boolean;
+    enabledReleases: boolean;
+    intervalMinutes: number;
+    isSyncing: boolean;
+    githubTokenConfigured: boolean;
+  }> {
+    if (!this._backendUrl) throw new Error('Backend not available');
+
+    const res = await this.fetchWithTimeout(`${this._backendUrl}/auto-sync/status`, {
+      headers: this.getAuthHeaders()
+    });
+    if (!res.ok) await this.throwTranslatedError(res, 'Fetch auto-sync status error');
+    return res.json() as Promise<{
+      lastSyncTime: string | null;
+      nextScheduledTime: string | null;
+      isEnabled: boolean;
+      enabledRepos: boolean;
+      enabledForks: boolean;
+      enabledReleases: boolean;
+      intervalMinutes: number;
+      isSyncing: boolean;
+      githubTokenConfigured: boolean;
+    }>;
+  }
 }
 
 export const backend = new BackendAdapter();

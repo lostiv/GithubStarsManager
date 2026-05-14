@@ -17,7 +17,9 @@ import proxyRouter from './routes/proxy.js';
 import analysisRouter from './routes/analysis.js';
 import backupRouter from './routes/backup.js';
 import forksRouter from './routes/forks.js';
+import autoSyncRouter from './routes/autoSyncRoutes.js';
 import { startBackupScheduler, stopBackupScheduler } from './services/backupService.js';
+import { startAutoSyncScheduler, stopAutoSyncScheduler } from './services/autoSyncService.js';
 
 export function createApp(): express.Express {
   const app = express();
@@ -47,6 +49,7 @@ export function createApp(): express.Express {
   app.use(analysisRouter);
   app.use(backupRouter);
   app.use(forksRouter);
+  app.use(autoSyncRouter);
 
   // Global error handler
   app.use(errorHandler);
@@ -64,6 +67,10 @@ function startServer(): void {
   startBackupScheduler();
   console.log('✅ Backup scheduler started');
 
+  // Start auto-sync scheduler
+  startAutoSyncScheduler();
+  console.log('✅ Auto-sync scheduler started');
+
   const app = createApp();
 
   const server = app.listen(config.port, () => {
@@ -78,6 +85,7 @@ function startServer(): void {
     console.log('\n🛑 Shutting down...');
     server.close(() => {
       stopBackupScheduler();
+      stopAutoSyncScheduler();
       closeDb();
       console.log('👋 Server stopped');
       process.exit(0);
