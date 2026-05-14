@@ -344,9 +344,13 @@ async function callAI(
     if (reasoningEffort && (apiType === 'openai' || apiType === 'openai-responses' || apiType === 'openai-compatible')) {
       (requestBody as Record<string, unknown>).reasoning = { effort: reasoningEffort };
     }
+    // Disable thinking chain for MiMo models to prevent reasoning content leaking into analysis
+    if (model.toLowerCase().includes('mimo')) {
+      (requestBody as Record<string, unknown>).thinking = { type: 'disabled' };
+    }
   }
 
-  const timeout = apiType === 'openai-responses' || !!reasoningEffort ? 600000 : 120000;
+  const timeout = apiType === 'openai-responses' || apiType === 'gemini' || !!reasoningEffort ? 600000 : 120000;
 
   const result = await proxyRequest({
     url: targetUrl,
@@ -376,8 +380,18 @@ function extractTextContent(apiType: string, data: Record<string, unknown>): str
     const content = (data as { content?: Array<{ type: string; text: string }> }).content;
     if (content && content.length > 0) return content[0].text || '';
   } else if (apiType === 'gemini') {
-    const candidates = (data as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }> }).candidates;
-    if (candidates?.[0]?.content?.parts?.[0]?.text) return candidates[0].content.parts[0].text;
+    const candidates = (data as { candidates?: Array<{ content?: { parts?: Array<{ text?: string; thought?: boolean }> }; finishReason?: string }> }).candidates;
+    if (Array.isArray(candidates) && candidates.length > 0) {
+      const parts = candidates[0]?.content?.parts;
+      if (Array.isArray(parts)) {
+        // Skip thought parts emitted by Gemini thinking models (e.g. gemini-2.5-pro)
+        const text = parts
+          .filter((p) => p && typeof p === 'object' && !(p as { thought?: boolean }).thought)
+          .map((p) => (p && typeof p === 'object' ? (p as { text?: string }).text || '' : ''))
+          .join('');
+        if (text) return text;
+      }
+    }
   } else if (apiType === 'openai-responses') {
     const outputText = (data as { output_text?: string }).output_text;
     if (outputText) return outputText;
