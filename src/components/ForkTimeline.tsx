@@ -84,10 +84,10 @@ export const ForkTimeline: React.FC = () => {
     // Only show actual forks (not user-created repos)
     filtered = filtered.filter(fork => fork.fork === true);
 
-    // Sort by source.updated_at desc (upstream latest update first)
+    // Sort by source.pushed_at desc (upstream latest code push first)
     filtered.sort((a, b) => {
-      const aTime = a.source?.updated_at ? new Date(a.source.updated_at).getTime() : 0;
-      const bTime = b.source?.updated_at ? new Date(b.source.updated_at).getTime() : 0;
+      const aTime = a.source?.pushed_at ? new Date(a.source.pushed_at).getTime() : 0;
+      const bTime = b.source?.pushed_at ? new Date(b.source.pushed_at).getTime() : 0;
       return bTime - aTime;
     });
 
@@ -213,7 +213,7 @@ export const ForkTimeline: React.FC = () => {
         return {
           ...newFork,
           has_unread: false,
-          upstream_updated_at: newFork.source?.updated_at,
+          upstream_updated_at: newFork.source?.pushed_at,
         };
       });
 
@@ -223,7 +223,7 @@ export const ForkTimeline: React.FC = () => {
         if (existing) {
           // Compare: if source updated since last check, mark as unread
           const prevUpstreamTime = existing.upstream_updated_at;
-          const currentUpstreamTime = fork.source?.updated_at;
+          const currentUpstreamTime = fork.source?.pushed_at;
           if (prevUpstreamTime && currentUpstreamTime) {
             const hasNewUpdates = new Date(currentUpstreamTime) > new Date(prevUpstreamTime);
             if (hasNewUpdates) {
@@ -241,7 +241,7 @@ export const ForkTimeline: React.FC = () => {
           }
           return {
             ...fork,
-            upstream_updated_at: existing.upstream_updated_at || fork.source?.updated_at,
+            upstream_updated_at: existing.upstream_updated_at || fork.source?.pushed_at,
           };
         }
         return fork;
