@@ -5,7 +5,6 @@ import { Repository } from '../types';
 import { GitHubApiService } from '../services/githubApi';
 import { backend } from '../services/backendAdapter';
 import { useDialog } from '../hooks/useDialog';
-import { forceSyncToBackend } from '../services/autoSync';
 
 export const Header: React.FC = () => {
   const {
@@ -165,11 +164,7 @@ export const Header: React.FC = () => {
 
       setRepositories(mergedRepositories);
 
-      // Force-push to backend immediately (bypass 2s debounce) so data survives a page refresh
-      forceSyncToBackend().catch(console.error);
-
-      // Note: Release fetching is now handled by the Refresh button in Release Timeline
-      // Header sync only syncs the starred repos list
+      // 降级路径：后端不可用，数据仅保存在 IndexedDB，下次后端连接后通过轮询同步
 
       setLastSync(new Date().toISOString());
 
