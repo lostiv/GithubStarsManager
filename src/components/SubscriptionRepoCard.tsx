@@ -510,7 +510,7 @@ export const SubscriptionRepoCard: React.FC<SubscriptionRepoCardProps> = ({ repo
               <div className="flex items-center gap-1">
                 {repo.ai_platforms.slice(0, 5).map((platform) => (
                   <span key={platform} className="text-gray-500 dark:text-text-tertiary" title={platform}>
-                    {getPlatformIcon(platform)}
+                    <span className="pointer-events-none">{getPlatformIcon(platform)}</span>
                   </span>
                 ))}
               </div>
