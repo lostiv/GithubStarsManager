@@ -16,6 +16,7 @@ import syncRouter from './routes/sync.js';
 import proxyRouter from './routes/proxy.js';
 import analysisRouter from './routes/analysis.js';
 import backupRouter from './routes/backup.js';
+import forksRouter from './routes/forks.js';
 import { startBackupScheduler, stopBackupScheduler } from './services/backupService.js';
 
 export function createApp(): express.Express {
@@ -45,6 +46,7 @@ export function createApp(): express.Express {
 
   app.use(analysisRouter);
   app.use(backupRouter);
+  app.use(forksRouter);
 
   // Global error handler
   app.use(errorHandler);

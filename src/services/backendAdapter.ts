@@ -358,30 +358,59 @@ class BackendAdapter {
 
   // === Fork Operations ===
 
-  async getUserForks(): Promise<ForkRepo[]> {
+  async getForks(): Promise<ForkRepo[]> {
     if (!this._backendUrl) throw new Error('Backend not available');
-    const allForks: ForkRepo[] = [];
-    let page = 1;
-    const perPage = 100;
-    while (true) {
-      const res = await this.fetchWithTimeout(
-        `${this._backendUrl}/proxy/github/user/repos?type=forks&sort=updated&per_page=${perPage}&page=${page}`,
-        {
-          method: 'POST',
-          headers: this.getAuthHeaders(),
-          body: JSON.stringify({ method: 'GET' })
-        }
-      );
-      if (!res.ok) {
-        if (res.status === 404) break;
-        await this.throwTranslatedError(res, 'Get user forks proxy error');
-      }
-      const data = await res.json() as ForkRepo[];
-      allForks.push(...data);
-      if (data.length < perPage) break;
-      page++;
+    const res = await this.fetchWithTimeout(
+      `${this._backendUrl}/api/forks`,
+      { headers: this.getAuthHeaders() }
+    );
+    if (!res.ok) {
+      await this.throwTranslatedError(res, 'Get forks error');
     }
-    return allForks;
+    return res.json();
+  }
+
+  async refreshForks(): Promise<ForkRepo[]> {
+    if (!this._backendUrl) throw new Error('Backend not available');
+    const res = await this.fetchWithTimeout(
+      `${this._backendUrl}/api/forks/refresh`,
+      {
+        method: 'POST',
+        headers: this.getAuthHeaders(),
+      }
+    );
+    if (!res.ok) {
+      await this.throwTranslatedError(res, 'Refresh forks error');
+    }
+    return res.json();
+  }
+
+  async markForkAsRead(forkId: number): Promise<void> {
+    if (!this._backendUrl) throw new Error('Backend not available');
+    const res = await this.fetchWithTimeout(
+      `${this._backendUrl}/api/forks/${forkId}/mark-read`,
+      {
+        method: 'POST',
+        headers: this.getAuthHeaders(),
+      }
+    );
+    if (!res.ok) {
+      await this.throwTranslatedError(res, 'Mark fork as read error');
+    }
+  }
+
+  async markAllForksAsRead(): Promise<void> {
+    if (!this._backendUrl) throw new Error('Backend not available');
+    const res = await this.fetchWithTimeout(
+      `${this._backendUrl}/api/forks/mark-all-read`,
+      {
+        method: 'POST',
+        headers: this.getAuthHeaders(),
+      }
+    );
+    if (!res.ok) {
+      await this.throwTranslatedError(res, 'Mark all forks as read error');
+    }
   }
 
   async checkForkSyncNeeded(
