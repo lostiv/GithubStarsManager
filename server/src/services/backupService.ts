@@ -20,7 +20,9 @@ function loadStateFromDb(): void {
         lastActiveConfigId = row.value || null;
       }
     }
-  } catch { /* ignore */ }
+  } catch (err) {
+    console.debug('[Backup] Failed to load state from DB:', err);
+  }
 }
 
 function setLastBackupTime(time: number): void {
