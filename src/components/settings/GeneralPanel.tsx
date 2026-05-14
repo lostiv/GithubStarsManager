@@ -71,8 +71,8 @@ export const GeneralPanel: React.FC<GeneralPanelProps> = ({ t }) => {
 
   const handleSyncSave = async () => {
     const totalMinutes = intervalHours * 60 + intervalMinutes;
-    if (totalMinutes < 1) {
-      toast(t('间隔时间至少为1分钟', 'Interval must be at least 1 minute'), 'error');
+    if (totalMinutes < 1 || totalMinutes > 43200) {
+      toast(t('间隔时间范围: 1分钟 - 30天', 'Interval range: 1 min - 30 days'), 'error');
       return;
     }
     if (!githubTokenConfigured && (enabledRepos || enabledForks || enabledReleases)) {
