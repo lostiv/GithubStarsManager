@@ -2,6 +2,7 @@ import React, { memo, useCallback } from 'react';
 import { ExternalLink, GitFork, RefreshCw, ChevronDown, ChevronUp, FolderOpen, Folder, Play, Loader2 } from 'lucide-react';
 import { ForkRepo, WorkflowDefinition } from '../types';
 import { formatDistanceToNow } from 'date-fns';
+import { zhCN } from 'date-fns/locale';
 
 interface ForkCardProps {
   fork: ForkRepo;
@@ -102,8 +103,8 @@ const ForkCard: React.FC<ForkCardProps> = memo(({
               <div className="flex items-center gap-1.5">
                 <RefreshCw className="w-3.5 h-3.5" />
                 <span>
-                  {(fork.fetched_at || fork.updated_at)
-                    ? formatDistanceToNow(new Date(fork.fetched_at || fork.updated_at), { addSuffix: true })
+                  {fork.updated_at
+                    ? formatDistanceToNow(new Date(fork.updated_at), { addSuffix: true, locale: language === 'zh' ? zhCN : undefined })
                     : '-'}
                 </span>
               </div>
@@ -111,7 +112,7 @@ const ForkCard: React.FC<ForkCardProps> = memo(({
                 <div className="flex items-center gap-1.5">
                   <GitFork className="w-3.5 h-3.5" />
                   <span>
-                    {formatDistanceToNow(new Date(fork.source.pushed_at), { addSuffix: true })}
+                    {formatDistanceToNow(new Date(fork.source.pushed_at), { addSuffix: true, locale: language === 'zh' ? zhCN : undefined })}
                   </span>
                 </div>
               )}

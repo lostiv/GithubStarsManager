@@ -9,6 +9,7 @@ import { backend } from '../services/backendAdapter';
 import { backendAnalysis } from '../services/backendAnalysisService';
 
 import { formatDistanceToNow } from 'date-fns';
+import { zhCN } from 'date-fns/locale';
 import { RepositoryEditModal } from './RepositoryEditModal';
 import { ReadmeModal } from './ReadmeModal';
 import { shallow } from 'zustand/shallow';
@@ -54,7 +55,7 @@ const SelectionAwareButton: React.FC<SelectionAwareButtonProps> = ({
       disabled={disabled || selectionMode}
       className={`${baseClasses} ${variantClasses[variant]} ${selectionClasses} ${className}`}
     >
-      {children}
+      <span className="pointer-events-none">{children}</span>
     </button>
   );
 };
@@ -824,7 +825,7 @@ const RepositoryCardComponent: React.FC<RepositoryCardProps> = ({
               className="flex items-center justify-center w-8 h-8 rounded-lg cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-700 dark:text-text-tertiary dark:hover:text-gray-900 hover:bg-light-surface dark:hover:bg-white/5 transition-all duration-200 touch-manipulation"
               title={language === 'zh' ? '拖拽我到侧栏以分类' : 'Drag me to sidebar to categorize'}
             >
-              <GripVertical className="w-4 h-4" />
+              <GripVertical className="w-4 h-4 pointer-events-none" />
             </div>
             {/* 弱气泡提示 */}
             {showDragHint && (
@@ -888,7 +889,7 @@ const RepositoryCardComponent: React.FC<RepositoryCardProps> = ({
             className={`flex items-center justify-center w-8 h-8 rounded-lg bg-gray-100 dark:bg-white/[0.04] text-gray-700 dark:text-text-secondary dark:bg-brand-indigo/20 dark:text-brand-violet hover:bg-gray-100 dark:bg-white/[0.04] dark:hover:bg-brand-indigo/30 transition-colors ${selectionMode ? 'pointer-events-none opacity-50' : ''}`}
             title={language === 'zh' ? '在Zread中查看' : 'View on DeepWiki'}
           >
-            <BookOpen className="w-4 h-4" />
+            <BookOpen className="w-4 h-4 pointer-events-none" />
           </a>
           <a
             href={repository.html_url}
@@ -898,7 +899,7 @@ const RepositoryCardComponent: React.FC<RepositoryCardProps> = ({
             className={`flex items-center justify-center w-8 h-8 rounded-lg bg-gray-100 text-gray-700 dark:bg-white/[0.04] dark:text-text-secondary hover:bg-gray-200 hover:text-gray-900 dark:hover:bg-white/[0.08] dark:hover:text-text-primary transition-colors ${selectionMode ? 'pointer-events-none opacity-50' : ''}`}
             title={language === 'zh' ? '在GitHub上查看' : 'View on GitHub'}
           >
-            <ExternalLink className="w-4 h-4" />
+            <ExternalLink className="w-4 h-4 pointer-events-none" />
           </a>
           <SelectionAwareButton
             onClick={handleUnstar}
@@ -1028,7 +1029,7 @@ const RepositoryCardComponent: React.FC<RepositoryCardProps> = ({
           <div className="flex items-center space-x-1">
             <Calendar className="w-4 h-4 flex-shrink-0" />
             <span className="truncate">
-              {language === 'zh' ? '最近提交' : 'Last pushed'} {formatDistanceToNow(new Date(repository.pushed_at || repository.updated_at), { addSuffix: true })}
+              {language === 'zh' ? '最近提交' : 'Last pushed'} {formatDistanceToNow(new Date(repository.pushed_at || repository.updated_at), { addSuffix: true, locale: language === 'zh' ? zhCN : undefined })}
             </span>
           </div>
 
@@ -1047,7 +1048,7 @@ const RepositoryCardComponent: React.FC<RepositoryCardProps> = ({
               }`}
               title={isSelected ? (language === 'zh' ? '取消选择' : 'Deselect') : (language === 'zh' ? '选择' : 'Select')}
             >
-              {isSelected ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5" />}
+              {isSelected ? <CheckSquare className="w-5 h-5 pointer-events-none" /> : <Square className="w-5 h-5 pointer-events-none" />}
             </button>
           )}
         </div>

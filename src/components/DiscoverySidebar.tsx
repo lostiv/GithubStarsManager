@@ -79,6 +79,7 @@ export const DiscoverySidebar: React.FC<DiscoverySidebarProps> = ({
               <button
                 key={channel.id}
                 onClick={() => onChannelSelect(channel.id)}
+                title={language === 'zh' ? channel.name : channel.nameEn}
                 className={`flex w-full items-center justify-between px-3 py-2 rounded-lg text-left transition-all duration-200 ${
                   isSelected
                     ? 'bg-gray-100 text-gray-900 dark:bg-white/[0.08] dark:text-text-primary font-medium'
@@ -86,7 +87,7 @@ export const DiscoverySidebar: React.FC<DiscoverySidebarProps> = ({
                 }`}
               >
                 <div className="flex items-center gap-2.5">
-                  {channel.icon}
+                  <span className="pointer-events-none">{channel.icon}</span>
                   <span className="font-medium text-sm">
                     {language === 'zh' ? channel.name : channel.nameEn}
                   </span>

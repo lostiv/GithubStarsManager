@@ -2,6 +2,7 @@ import React, { memo, useCallback } from 'react';
 import { ExternalLink, GitBranch, Calendar, Download, ChevronDown, ChevronUp, BookOpen, ArrowUpRight, FolderOpen, Folder, BellOff, FileArchive, Code2 } from 'lucide-react';
 import { Release } from '../types';
 import { formatDistanceToNow } from 'date-fns';
+import { zhCN } from 'date-fns/locale';
 import MarkdownRenderer from './MarkdownRenderer';
 
 interface DownloadLink {
@@ -97,7 +98,7 @@ const ReleaseCard: React.FC<ReleaseCardProps> = memo(({
             <div className="hidden md:flex min-w-[140px] flex-col justify-center gap-2 text-xs text-gray-500 dark:text-text-tertiary">
               <div className="flex items-center gap-1.5">
                 <Calendar className="w-3.5 h-3.5" />
-                <span>{formatDistanceToNow(new Date(release.published_at), { addSuffix: true })}</span>
+                <span>{formatDistanceToNow(new Date(release.published_at), { addSuffix: true, locale: language === 'zh' ? zhCN : undefined })}</span>
               </div>
               {downloadLinks.length > 0 && (
                 <div className="flex items-center gap-1.5">
@@ -261,8 +262,9 @@ const ReleaseCard: React.FC<ReleaseCardProps> = memo(({
                         onToggleFullContent(e);
                       }}
                       className="flex items-center justify-center space-x-1 px-3 py-1.5 bg-brand-indigo text-white rounded hover:bg-gray-100 dark:bg-white/[0.04] active:bg-gray-100 dark:bg-white/[0.04] transition-all duration-200 text-xs font-medium min-w-[120px]"
+                      title={isFullContent ? t('收起', 'Collapse') : t('查看完整', 'View Full')}
                     >
-                      <BookOpen className="w-3 h-3" />
+                      <BookOpen className="w-3 h-3 pointer-events-none" />
                       <span>{isFullContent ? t('收起', 'Collapse') : t('查看完整', 'View Full')}</span>
                     </button>
                     <a
@@ -274,8 +276,9 @@ const ReleaseCard: React.FC<ReleaseCardProps> = memo(({
                         e.stopPropagation();
                         onMarkAsRead();
                       }}
+                      title={t('在GitHub上查看', 'View on GitHub')}
                     >
-                      <ArrowUpRight className="w-3.5 h-3.5" />
+                      <ArrowUpRight className="w-3.5 h-3.5 pointer-events-none" />
                       <span>{t('GitHub', 'GitHub')}</span>
                     </a>
                   </div>

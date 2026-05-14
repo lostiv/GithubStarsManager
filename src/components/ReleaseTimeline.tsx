@@ -4,6 +4,7 @@ import { Release } from '../types';
 import { useAppStore } from '../store/useAppStore';
 import { backend } from '../services/backendAdapter';
 import { formatDistanceToNow } from 'date-fns';
+import { zhCN } from 'date-fns/locale';
 import { AssetFilterManager } from './AssetFilterManager';
 import { PRESET_FILTERS } from '../constants/presetFilters';
 import ReleaseCard from './ReleaseCard';
@@ -613,13 +614,14 @@ export const ReleaseTimeline: React.FC = () => {
                onClick={handleRefresh}
                disabled={releaseIsRefreshing}
                className="flex items-center space-x-2 px-6 py-3 bg-brand-indigo text-white rounded-lg hover:bg-brand-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+               title={t('刷新Release', 'Refresh Releases')}
              >
-               <RefreshCw className={`w-5 h-5 ${releaseIsRefreshing ? 'animate-spin' : ''}`} />
+               <RefreshCw className={`w-5 h-5 ${releaseIsRefreshing ? 'animate-spin' : ''} pointer-events-none`} />
                <span>{releaseIsRefreshing ? t('刷新中...', 'Refreshing...') : t('刷新Release', 'Refresh Releases')}</span>
              </button>
             {lastReleaseFetchTime && (
               <p className="text-sm text-gray-500 dark:text-text-tertiary">
-                {t('上次刷新:', 'Last refresh:')} {formatDistanceToNow(new Date(lastReleaseFetchTime), { addSuffix: true })}
+                {t('上次刷新:', 'Last refresh:')} {formatDistanceToNow(new Date(lastReleaseFetchTime), { addSuffix: true, locale: language === 'zh' ? zhCN : undefined })}
               </p>
             )}
           </div>
@@ -673,7 +675,7 @@ export const ReleaseTimeline: React.FC = () => {
             {/* Last Refresh Time */}
             {lastReleaseFetchTime && (
               <span className="w-full text-sm text-gray-500 dark:text-text-tertiary lg:w-auto">
-                {t('上次刷新:', 'Last refresh:')} {formatDistanceToNow(new Date(lastReleaseFetchTime), { addSuffix: true })}
+                {t('上次刷新:', 'Last refresh:')} {formatDistanceToNow(new Date(lastReleaseFetchTime), { addSuffix: true, locale: language === 'zh' ? zhCN : undefined })}
               </span>
             )}
 
@@ -699,8 +701,9 @@ export const ReleaseTimeline: React.FC = () => {
             <button
               onClick={() => { markAllReleasesAsRead(); backend.markAllReleasesAsRead().catch((err) => { console.error('[ReleaseTimeline] markAllReleasesAsRead failed:', err); }); }}
               className="flex items-center space-x-2 px-4 py-2 text-brand-indigo bg-brand-indigo/10 rounded-lg hover:bg-brand-indigo/20 transition-colors"
+              title={t('全部已读', 'Mark All Read')}
             >
-              <Check className="w-4 h-4" />
+              <Check className="w-4 h-4 pointer-events-none" />
               <span>{t('全部已读', 'Mark All Read')}</span>
             </button>
 
@@ -709,8 +712,9 @@ export const ReleaseTimeline: React.FC = () => {
               onClick={handleRefresh}
               disabled={releaseIsRefreshing}
               className="flex items-center space-x-2 px-4 py-2 bg-brand-indigo text-white rounded-lg hover:bg-brand-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              title={t('刷新', 'Refresh')}
             >
-              <RefreshCw className={`w-4 h-4 ${releaseIsRefreshing ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`w-4 h-4 ${releaseIsRefreshing ? 'animate-spin' : ''} pointer-events-none`} />
               <span>{releaseIsRefreshing ? t('刷新中...', 'Refreshing...') : t('刷新', 'Refresh')}</span>
             </button>
           </div>
@@ -738,8 +742,9 @@ export const ReleaseTimeline: React.FC = () => {
                   setCurrentPage(1);
                 }}
                 className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-text-quaternary hover:text-gray-700 dark:text-text-secondary dark:hover:text-gray-300"
+                title={t('清除搜索', 'Clear search')}
               >
-                <X className="w-4 h-4" />
+                <X className="w-4 h-4 pointer-events-none" />
               </button>
             )}
           </div>
@@ -762,14 +767,14 @@ export const ReleaseTimeline: React.FC = () => {
                 title={viewMode === 'timeline' ? t('按日期排序视图', 'Timeline View') : t('仓库分类视图', 'Repository View')}
               >
                 {viewMode === 'timeline' ? (
-                  <CalendarDays className="w-4 h-4 text-gray-700 dark:text-text-tertiary" />
+                  <CalendarDays className="w-4 h-4 text-gray-700 dark:text-text-tertiary pointer-events-none" />
                 ) : (
-                  <LayoutGrid className="w-4 h-4 text-gray-700 dark:text-text-tertiary" />
+                  <LayoutGrid className="w-4 h-4 text-gray-700 dark:text-text-tertiary pointer-events-none" />
                 )}
                 <span className="text-sm font-medium text-gray-900 dark:text-text-secondary">
                   {viewMode === 'timeline' ? t('按日期', 'Timeline') : t('按仓库', 'Repository')}
                 </span>
-                <ChevronDown className={`w-4 h-4 text-gray-500 dark:text-text-tertiary transition-transform ${isViewDropdownOpen ? 'rotate-180' : ''}`} />
+                <ChevronDown className={`w-4 h-4 text-gray-500 dark:text-text-tertiary transition-transform ${isViewDropdownOpen ? 'rotate-180' : ''} pointer-events-none`} />
               </button>
 
               {/* Dropdown Menu */}
@@ -790,7 +795,7 @@ export const ReleaseTimeline: React.FC = () => {
                         viewMode === 'timeline' ? 'bg-gray-100 dark:bg-white/[0.08] text-gray-900 dark:text-text-primary font-medium' : 'text-gray-700 dark:text-text-secondary'
                       }`}
                     >
-                      <CalendarDays className={`w-4 h-4 ${viewMode === 'timeline' ? 'text-gray-900 dark:text-text-primary' : 'text-gray-500 dark:text-text-tertiary'}`} />
+                      <CalendarDays className={`w-4 h-4 ${viewMode === 'timeline' ? 'text-gray-900 dark:text-text-primary' : 'text-gray-500 dark:text-text-tertiary'} pointer-events-none`} />
                       <div>
                         <div className="text-sm font-medium">{t('按日期排序', 'Timeline View')}</div>
                         <div className="text-xs text-gray-500 dark:text-text-tertiary">{t('按发布时间排序', 'Sort by publish date')}</div>
@@ -806,7 +811,7 @@ export const ReleaseTimeline: React.FC = () => {
                         viewMode === 'repository' ? 'bg-gray-100 dark:bg-white/[0.08] text-gray-900 dark:text-text-primary font-medium' : 'text-gray-700 dark:text-text-secondary'
                       }`}
                     >
-                      <LayoutGrid className={`w-4 h-4 ${viewMode === 'repository' ? 'text-gray-900 dark:text-text-primary' : 'text-gray-500 dark:text-text-tertiary'}`} />
+                      <LayoutGrid className={`w-4 h-4 ${viewMode === 'repository' ? 'text-gray-900 dark:text-text-primary' : 'text-gray-500 dark:text-text-tertiary'} pointer-events-none`} />
                       <div>
                         <div className="text-sm font-medium">{t('仓库分类', 'Repository View')}</div>
                         <div className="text-xs text-gray-500 dark:text-text-tertiary">{t('按仓库分组折叠', 'Group by repository')}</div>
@@ -867,15 +872,17 @@ export const ReleaseTimeline: React.FC = () => {
                   onClick={() => handlePageChange(1)}
                   disabled={clampedPage === 1}
                   className="p-2 rounded-lg bg-light-surface text-gray-700 dark:bg-white/[0.04] dark:text-text-tertiary hover:bg-gray-200 dark:hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed"
+                  title={t('第一页', 'First page')}
                 >
-                  <ChevronsLeft className="w-4 h-4" />
+                  <ChevronsLeft className="w-4 h-4 pointer-events-none" />
                 </button>
                 <button
                   onClick={() => handlePageChange(clampedPage - 1)}
                   disabled={clampedPage === 1}
                   className="p-2 rounded-lg bg-light-surface text-gray-700 dark:bg-white/[0.04] dark:text-text-tertiary hover:bg-gray-200 dark:hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed"
+                  title={t('上一页', 'Previous page')}
                 >
-                  <ChevronLeft className="w-4 h-4" />
+                  <ChevronLeft className="w-4 h-4 pointer-events-none" />
                 </button>
                 
                 {getPageNumbers().map((page, index) => (
@@ -899,15 +906,17 @@ export const ReleaseTimeline: React.FC = () => {
                   onClick={() => handlePageChange(clampedPage + 1)}
                   disabled={clampedPage === totalPages}
                   className="p-2 rounded-lg bg-light-surface text-gray-700 dark:bg-white/[0.04] dark:text-text-tertiary hover:bg-gray-200 dark:hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed"
+                  title={t('下一页', 'Next page')}
                 >
-                  <ChevronRight className="w-4 h-4" />
+                  <ChevronRight className="w-4 h-4 pointer-events-none" />
                 </button>
                 <button
                   onClick={() => handlePageChange(totalPages)}
                   disabled={clampedPage === totalPages}
                   className="p-2 rounded-lg bg-light-surface text-gray-700 dark:bg-white/[0.04] dark:text-text-tertiary hover:bg-gray-200 dark:hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed"
+                  title={t('最后一页', 'Last page')}
                 >
-                  <ChevronsRight className="w-4 h-4" />
+                  <ChevronsRight className="w-4 h-4 pointer-events-none" />
                 </button>
               </div>
             )}
@@ -981,13 +990,14 @@ export const ReleaseTimeline: React.FC = () => {
                 <button
                   onClick={() => toggleReleaseExpandedRepository(repository.id)}
                   className="w-full flex items-center justify-between p-2 hover:bg-light-bg dark:hover:bg-white/10/50 transition-colors"
+                  title={isExpanded ? t('收起仓库', 'Collapse repository') : t('展开仓库', 'Expand repository')}
                 >
                   <div className="flex items-center space-x-2">
                     {hasUnread && (
                       <div className="w-1.5 h-1.5 bg-brand-violet rounded-full flex-shrink-0 animate-pulse"></div>
                     )}
                     <div className="flex items-center justify-center w-6 h-6 bg-brand-indigo/20 rounded flex-shrink-0">
-                      <LayoutGrid className="w-3.5 h-3.5 text-brand-violet" />
+                      <LayoutGrid className="w-3.5 h-3.5 text-brand-violet pointer-events-none" />
                     </div>
                     <div className="text-left">
                       <h3 className="font-semibold text-sm text-gray-900 dark:text-text-primary">
@@ -1010,7 +1020,7 @@ export const ReleaseTimeline: React.FC = () => {
                       )}
                     </div>
                     <div className={`transform transition-transform ${isExpanded ? 'rotate-180' : ''}`}>
-                      <ChevronDown className="w-4 h-4 text-gray-400 dark:text-text-quaternary" />
+                      <ChevronDown className="w-4 h-4 text-gray-400 dark:text-text-quaternary pointer-events-none" />
                     </div>
                   </div>
                 </button>

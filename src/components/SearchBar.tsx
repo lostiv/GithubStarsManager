@@ -953,7 +953,7 @@ export const SearchBar: React.FC = () => {
                 : 'bg-white border border-black/[0.06] text-gray-700 dark:bg-white/[0.04] dark:border-white/[0.04] dark:text-text-secondary hover:bg-gray-50 hover:text-gray-900 dark:hover:bg-white/[0.08] dark:hover:text-text-primary'
             }`}
           >
-            <SlidersHorizontal className="w-4 h-4" />
+            <SlidersHorizontal className="w-4 h-4 pointer-events-none" />
             <span>{t('过滤器', 'Filters')}</span>
             {activeFiltersCount > 0 && (
               <span className="bg-brand-indigo text-white rounded-full px-2 py-0.5 text-xs">
@@ -966,8 +966,9 @@ export const SearchBar: React.FC = () => {
             <button
               onClick={clearFilters}
               className="flex items-center space-x-1 px-3 py-2 text-sm text-gray-700 dark:text-text-tertiary hover:text-gray-900 dark:hover:text-gray-200 transition-colors"
+              title={t('清除全部', 'Clear all')}
             >
-              <X className="w-4 h-4" />
+              <X className="w-4 h-4 pointer-events-none" />
               <span>{t('清除全部', 'Clear all')}</span>
             </button>
           )}

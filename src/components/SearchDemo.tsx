@@ -82,7 +82,7 @@ export const SearchDemo: React.FC = () => {
             onClick={() => setShowDemo(true)}
             className="flex items-center space-x-2 px-4 py-2 bg-brand-indigo text-white rounded-lg hover:bg-brand-hover transition-colors text-sm font-medium"
           >
-            <Play className="w-4 h-4" />
+            <Play className="w-4 h-4 pointer-events-none" />
             <span>{t('查看演示', 'View Demo')}</span>
           </button>
         </div>
@@ -136,7 +136,7 @@ export const SearchDemo: React.FC = () => {
                 }`}
               >
                 <div className="flex items-center space-x-2 mb-1">
-                  <Search className="w-4 h-4 text-brand-violet" />
+                  <Search className="w-4 h-4 text-brand-violet pointer-events-none" />
                   <code className="text-sm font-mono bg-light-surface dark:bg-white/[0.04] px-2 py-1 rounded">
                     {example.query}
                   </code>
@@ -151,7 +151,7 @@ export const SearchDemo: React.FC = () => {
         {/* AI搜索示例 */}
         <div className="space-y-3">
           <div className="flex items-center space-x-2 mb-3">
-            <Bot className="w-4 h-4 text-gray-700 dark:text-text-secondary" />
+            <Bot className="w-4 h-4 text-gray-700 dark:text-text-secondary pointer-events-none" />
             <h4 className="font-medium text-gray-900 dark:text-text-primary">
               {t('AI语义搜索', 'AI Semantic Search')}
             </h4>
@@ -169,7 +169,7 @@ export const SearchDemo: React.FC = () => {
                 }`}
               >
                 <div className="flex items-center space-x-2 mb-1">
-                  <Bot className="w-4 h-4 text-gray-700 dark:text-text-secondary" />
+                  <Bot className="w-4 h-4 text-gray-700 dark:text-text-secondary pointer-events-none" />
                   <code className="text-sm font-mono bg-light-surface dark:bg-white/[0.04] px-2 py-1 rounded">
                     {example.query}
                   </code>
@@ -189,7 +189,7 @@ export const SearchDemo: React.FC = () => {
             {selectedExample.type === 'realtime' ? (
               <div className="w-2 h-2 bg-brand-violet rounded-full animate-pulse"></div>
             ) : (
-              <Bot className="w-4 h-4 text-gray-700 dark:text-text-secondary" />
+              <Bot className="w-4 h-4 text-gray-700 dark:text-text-secondary pointer-events-none" />
             )}
             <h5 className="font-medium text-gray-900 dark:text-text-primary">
               {selectedExample.description}
@@ -250,7 +250,7 @@ export const SearchDemo: React.FC = () => {
           </div>
           <div className="space-y-2">
             <div className="flex items-center space-x-2">
-              <Bot className="w-4 h-4 text-gray-700 dark:text-text-secondary" />
+              <Bot className="w-4 h-4 text-gray-700 dark:text-text-secondary pointer-events-none" />
               <span className="font-medium text-gray-900 dark:text-text-secondary">
                 {t('AI语义搜索', 'AI Semantic Search')}
               </span>

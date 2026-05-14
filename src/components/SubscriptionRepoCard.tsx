@@ -405,13 +405,15 @@ export const SubscriptionRepoCard: React.FC<SubscriptionRepoCardProps> = ({ repo
                     : t('AI分析', 'AI Analyze')
                 }
               >
-                {isAnalyzing ? (
-                  <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                ) : isAnalyzed ? (
-                  <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                ) : (
-                  <Bot className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                )}
+                <span className="pointer-events-none">
+                  {isAnalyzing ? (
+                    <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                  ) : isAnalyzed ? (
+                    <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  ) : (
+                    <Bot className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  )}
+                </span>
               </button>
 
               {/* ZRead button - hidden on small screens */}
@@ -420,7 +422,7 @@ export const SubscriptionRepoCard: React.FC<SubscriptionRepoCardProps> = ({ repo
                 className="hidden sm:flex items-center justify-center w-8 h-8 rounded-lg bg-gray-100 text-gray-700 dark:bg-white/[0.04] dark:text-text-secondary hover:bg-gray-200 hover:text-gray-900 dark:hover:bg-white/[0.08] dark:hover:text-text-primary transition-colors"
                 title={t('在ZRead打开', 'Open in ZRead')}
               >
-                <BookOpen className="w-4 h-4" />
+                <BookOpen className="w-4 h-4 pointer-events-none" />
               </button>
 
               {/* GitHub button - hidden on small screens */}
@@ -431,7 +433,7 @@ export const SubscriptionRepoCard: React.FC<SubscriptionRepoCardProps> = ({ repo
                 className="hidden sm:flex items-center justify-center w-8 h-8 rounded-lg bg-gray-100 text-gray-700 dark:bg-white/[0.04] dark:text-text-secondary hover:bg-gray-200 hover:text-gray-900 dark:hover:bg-white/[0.08] dark:hover:text-text-primary transition-colors"
                 title={t('在GitHub打开', 'Open on GitHub')}
               >
-                <ExternalLink className="w-4 h-4" />
+                <ExternalLink className="w-4 h-4 pointer-events-none" />
               </a>
 
               {/* Star button */}
@@ -445,13 +447,15 @@ export const SubscriptionRepoCard: React.FC<SubscriptionRepoCardProps> = ({ repo
                 }`}
                 title={isStarred ? t('取消Star', 'Unstar') : t('添加Star', 'Add Star')}
               >
-                {isStarring ? (
-                  <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                ) : isStarred ? (
-                  <StarOff className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                ) : (
-                  <Star className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                )}
+                <span className="pointer-events-none">
+                  {isStarring ? (
+                    <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                  ) : isStarred ? (
+                    <StarOff className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  ) : (
+                    <Star className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  )}
+                </span>
               </button>
             </div>
           </div>
