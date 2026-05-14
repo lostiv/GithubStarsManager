@@ -4,6 +4,9 @@ import { useAppStore } from '../store/useAppStore';
 // Prevent concurrent syncs: when we're pulling data FROM backend, don't start another pull.
 let _isSyncingFromBackendActive = false;
 
+// When true, local repos need to be pushed to backend (bootstrap scenario)
+let _hasPendingPush = false;
+
 // Polling timer for pull-from-backend
 let _pollTimer: ReturnType<typeof setInterval> | null = null;
 
@@ -106,8 +109,24 @@ export async function syncFromBackend(): Promise<void> {
 
     // Update store then commit hash — hash only changes if setter succeeds
     if (changed.repos && reposResult.status === 'fulfilled') {
-      state.setRepositories(reposResult.value.repositories);
-      _lastHash.repos = hashes.repos;
+      const backendRepos = reposResult.value.repositories;
+      const localRepos = state.repositories;
+      // Distinguish first-ever sync (bootstrap) from an authoritative empty backend.
+      // On bootstrap the hash is still '' — preserve local cache and push it to backend.
+      // On subsequent syncs, accept the backend state even if empty (e.g. user cleared
+      // stars from another device).
+      const isBootstrapEmpty =
+        backendRepos.length === 0 && localRepos.length > 0 && _lastHash.repos === '';
+      if (isBootstrapEmpty) {
+        _hasPendingPush = true;
+        // Push local repos to backend immediately — don't let them sit in limbo
+        backend.syncRepositories(localRepos, true).catch(err =>
+          console.error('Bootstrap push failed:', err)
+        );
+      } else {
+        state.setRepositories(backendRepos);
+        _lastHash.repos = hashes.repos;
+      }
     }
     if (changed.releases && releasesResult.status === 'fulfilled') {
       const backendReleases = releasesResult.value.releases;
@@ -214,4 +233,19 @@ export function stopAutoSync(): void {
   }
   _isSyncingFromBackendActive = false;
   console.log('🔄 Auto-sync stopped');
+}
+
+/**
+ * Immediately push current repositories to backend, bypassing any debounce.
+ * Used after star-sync to ensure data survives a page refresh.
+ */
+export async function forceSyncToBackend(): Promise<void> {
+  if (!backend.isAvailable) return;
+  _hasPendingPush = false;
+  const state = useAppStore.getState();
+  try {
+    await backend.syncRepositories(state.repositories, true);
+  } catch (err) {
+    console.error('forceSyncToBackend failed:', err);
+  }
 }

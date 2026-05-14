@@ -163,6 +163,9 @@ export const Header: React.FC = () => {
       });
 
       setRepositories(mergedRepositories);
+
+      // 降级路径：后端不可用，数据仅保存在 IndexedDB，下次后端连接后通过轮询同步
+
       setLastSync(new Date().toISOString());
 
       const existingIds = new Set(repositories.map(r => r.id));
