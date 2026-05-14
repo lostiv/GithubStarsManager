@@ -67,7 +67,7 @@ export const DiscoverySidebar: React.FC<DiscoverySidebarProps> = ({
             title={t('刷新全部', 'Refresh All')}
             aria-label={t('刷新全部', 'Refresh All')}
           >
-            <RefreshCw className={`w-4 h-4 ${anyLoading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-4 h-4 ${anyLoading ? 'animate-spin' : ''} pointer-events-none`} />
           </button>
         </div>
 
@@ -82,6 +82,7 @@ export const DiscoverySidebar: React.FC<DiscoverySidebarProps> = ({
                 onClick={() => onChannelSelect(channel.id)}
                 title={language === 'zh' ? channel.name : channel.nameEn}
                 aria-label={language === 'zh' ? channel.name : channel.nameEn}
+                aria-pressed={isSelected}
                 className={`flex w-full items-center justify-between px-3 py-2 rounded-lg text-left transition-all duration-200 ${
                   isSelected
                     ? 'bg-gray-100 text-gray-900 dark:bg-white/[0.08] dark:text-text-primary font-medium'
