@@ -102,8 +102,8 @@ const ForkCard: React.FC<ForkCardProps> = memo(({
               <div className="flex items-center gap-1.5">
                 <RefreshCw className="w-3.5 h-3.5" />
                 <span>
-                  {fork.updated_at
-                    ? formatDistanceToNow(new Date(fork.updated_at), { addSuffix: true })
+                  {(fork.fetched_at || fork.updated_at)
+                    ? formatDistanceToNow(new Date(fork.fetched_at || fork.updated_at), { addSuffix: true })
                     : '-'}
                 </span>
               </div>

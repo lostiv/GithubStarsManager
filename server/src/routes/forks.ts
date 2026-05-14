@@ -31,6 +31,7 @@ function dbRowToFork(row: Record<string, unknown>) {
     ...(parent ? { parent } : {}),
     has_unread: row.is_read === 0,
     upstream_updated_at: row.upstream_pushed_at ?? undefined,
+    fetched_at: row.fetched_at ?? undefined,
   };
 }
 
