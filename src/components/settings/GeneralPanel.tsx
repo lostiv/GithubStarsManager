@@ -32,6 +32,9 @@ export const GeneralPanel: React.FC<GeneralPanelProps> = ({ t }) => {
   useEffect(() => {
     loadSyncSettings();
     loadSyncStatus();
+    // 每30秒刷新状态，确保 Token 配置等变更能自动反映
+    const timer = setInterval(loadSyncStatus, 30000);
+    return () => clearInterval(timer);
   }, []);
 
   const loadSyncSettings = async () => {

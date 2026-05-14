@@ -3,7 +3,7 @@ import { decrypt } from '../services/crypto.js';
 import { config } from '../config.js';
 import { proxyRequest } from '../services/proxyService.js';
 
-function getGitHubToken(): string {
+export function getGitHubToken(): string {
   const db = getDb();
   const tokenRow = db.prepare('SELECT value FROM settings WHERE key = ?').get('github_token') as { value: string } | undefined;
   if (!tokenRow?.value) {

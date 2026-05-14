@@ -1,12 +1,11 @@
 import { getDb } from '../db/connection.js';
-import { config } from '../config.js';
-import { decrypt } from '../services/crypto.js';
 import { proxyRequest } from '../services/proxyService.js';
-import { refreshForksFromGitHub } from './forkService.js';
+import { getGitHubToken, refreshForksFromGitHub } from './forkService.js';
 
 let schedulerTimer: ReturnType<typeof setInterval> | null = null;
 let lastSyncTime: number | null = null;
 let isSyncing = false;
+let lastTokenWarningTime = 0;
 
 function loadStateFromDb(): void {
   try {
@@ -26,15 +25,6 @@ function setLastSyncTime(time: number): void {
     const db = getDb();
     db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('auto_sync_last_time', ?)").run(String(time));
   } catch { /* ignore */ }
-}
-
-function getGitHubToken(): string {
-  const db = getDb();
-  const tokenRow = db.prepare('SELECT value FROM settings WHERE key = ?').get('github_token') as { value: string } | undefined;
-  if (!tokenRow?.value) {
-    throw new Error('GitHub token not configured');
-  }
-  return decrypt(tokenRow.value, config.encryptionKey);
 }
 
 function githubHeaders(token: string): Record<string, string> {
@@ -231,12 +221,13 @@ async function syncReleases(token: string): Promise<number> {
           page++;
         }
       } else {
-        // Incremental: only fetch releases newer than last_release_fetch_time
+        // 增量：仅拉取上次同步之后有新发布的 release
+        // 不按 created_at 断点 — API 排序与过滤字段不一致，提前断点会遗漏后面页的发布
         const sinceTime = repo.last_release_fetch_time ? new Date(repo.last_release_fetch_time) : null;
         let page = 1;
         const maxPages = 50;
         while (page <= maxPages) {
-          const url = `https://api.github.com/repos/${owner}/${name}/releases?per_page=10&page=${page}`;
+          const url = `https://api.github.com/repos/${owner}/${name}/releases?per_page=100&page=${page}`;
           const result = await proxyRequest({ url, method: 'GET', headers, timeout: 30000 });
           if (result.status !== 200) {
             console.warn(`[AutoSync] Failed to fetch releases for ${repo.full_name}: HTTP ${result.status}`);
@@ -246,14 +237,17 @@ async function syncReleases(token: string): Promise<number> {
           if (!Array.isArray(batch) || batch.length === 0) break;
 
           const fresh = sinceTime
-            ? batch.filter(r => new Date(r.published_at as string) > sinceTime)
+            ? batch.filter(r => {
+                // 优先用 published_at；Draft 为 null 时回退到 created_at
+                const pubDate = r.published_at ? new Date(r.published_at as string) : null;
+                const compareDate = pubDate && !isNaN(pubDate.getTime()) ? pubDate : new Date(r.created_at as string);
+                return !isNaN(compareDate.getTime()) && compareDate > sinceTime;
+              })
             : batch;
 
           releases.push(...fresh);
 
-          if (batch.length < 10 || (sinceTime && batch.some(r => new Date(r.published_at as string) <= sinceTime))) {
-            break;
-          }
+          if (batch.length < 100) break;
           page++;
         }
       }
@@ -395,8 +389,13 @@ async function checkAndSync(): Promise<void> {
 
   try {
     getGitHubToken();
+    lastTokenWarningTime = 0;
   } catch {
-    console.warn('[AutoSync] GitHub token not configured, skipping');
+    // 每30分钟最多报一次，避免每分钟刷屏
+    if (Date.now() - lastTokenWarningTime > 1800000) {
+      console.warn('[AutoSync] GitHub token not configured, skipping');
+      lastTokenWarningTime = Date.now();
+    }
     return;
   }
 
