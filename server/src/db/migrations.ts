@@ -8,6 +8,10 @@ const migrations: Record<number, (db: Database.Database) => void> = {
   2: (db) => {
     initializeSchema(db);
   },
+  3: (db) => {
+    // v3: ensure forks table exists for users who were already at v2
+    initializeSchema(db);
+  },
 };
 
 export function runMigrations(db: Database.Database): void {
