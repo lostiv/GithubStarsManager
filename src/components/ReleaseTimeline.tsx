@@ -339,16 +339,17 @@ export const ReleaseTimeline: React.FC = () => {
     setCurrentPage(1);
   };
 
-  // 从仓库同步时间中派生"上次刷新"时间（取所有订阅仓库中最新的 last_release_fetch_time）
+  // 从仓库同步时间中派生"上次刷新"时间（仅统计已订阅 Release 的仓库）
   const lastReleaseFetchTime = useMemo(() => {
     let latest: string | null = null;
     for (const repo of repositories) {
+      if (!releaseSubscriptions.has(repo.id)) continue;
       if (repo.last_release_fetch_time && (!latest || repo.last_release_fetch_time > latest)) {
         latest = repo.last_release_fetch_time;
       }
     }
     return latest;
-  }, [repositories]);
+  }, [repositories, releaseSubscriptions]);
 
   const handleRefresh = async () => {
     if (!backend.isAvailable) {

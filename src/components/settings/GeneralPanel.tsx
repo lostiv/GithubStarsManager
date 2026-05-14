@@ -295,7 +295,7 @@ export const GeneralPanel: React.FC<GeneralPanelProps> = ({ t }) => {
             <button
               onClick={handleSyncSave}
               disabled={syncSaving}
-              className="w-full px-4 py-2 bg-brand-indigo hover:bg-brand-hover disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition-colors flex items-center justify-center gap-2"
+              className="w-full px-4 py-2 bg-brand-indigo dark:bg-brand-indigo hover:bg-brand-hover dark:hover:bg-brand-hover disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition-colors flex items-center justify-center gap-2"
             >
               <RotateCw className={`w-4 h-4 ${syncSaving ? 'animate-spin' : ''}`} />
               {syncSaving ? t('保存中...', 'Saving...') : t('保存设置', 'Save Settings')}
