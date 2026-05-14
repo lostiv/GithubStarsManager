@@ -11,13 +11,8 @@ import { Modal } from './Modal';
 export const ForkTimeline: React.FC = () => {
   const {
     forks,
-    readForks,
     language,
     setForks,
-    addForks,
-    markForkAsRead,
-    markAllForksAsRead,
-    updateFork,
     // Fork Timeline View State from global store
     forkViewMode,
     forkSelectedFilters,
@@ -73,10 +68,6 @@ export const ForkTimeline: React.FC = () => {
 
   const t = useCallback((zh: string, en: string) => language === 'zh' ? zh : en, [language]);
 
-  const isForkUnread = useCallback((forkId: number) => {
-    return !readForks.has(forkId);
-  }, [readForks]);
-
   // Filter and sort forks
   const filteredForks = useMemo(() => {
     let filtered = [...forks];
@@ -84,10 +75,10 @@ export const ForkTimeline: React.FC = () => {
     // Only show actual forks (not user-created repos)
     filtered = filtered.filter(fork => fork.fork === true);
 
-    // Sort by source.updated_at desc (upstream latest update first)
+    // Sort by source.pushed_at desc (upstream latest code push first)
     filtered.sort((a, b) => {
-      const aTime = a.source?.updated_at ? new Date(a.source.updated_at).getTime() : 0;
-      const bTime = b.source?.updated_at ? new Date(b.source.updated_at).getTime() : 0;
+      const aTime = a.source?.pushed_at ? new Date(a.source.pushed_at).getTime() : 0;
+      const bTime = b.source?.pushed_at ? new Date(b.source.pushed_at).getTime() : 0;
       return bTime - aTime;
     });
 
@@ -112,7 +103,7 @@ export const ForkTimeline: React.FC = () => {
   const startIndex = (clampedPage - 1) * itemsPerPage;
   const paginatedForks = filteredForks.slice(startIndex, startIndex + itemsPerPage);
 
-  // Auto-load forks on mount if empty
+  // Auto-load forks on mount if empty (from backend cache)
   const [initialLoadDone, setInitialLoadDone] = useState(false);
 
   useEffect(() => {
@@ -127,10 +118,10 @@ export const ForkTimeline: React.FC = () => {
     const loadForks = async () => {
       setForkIsRefreshing(true);
       try {
-        const newForks = await backend.getUserForks();
+        const cached = await backend.getForks();
         if (cancelled) return;
-        if (newForks.length > 0) {
-          setForks(newForks);
+        if (cached.length > 0) {
+          setForks(cached);
         }
         setInitialLoadDone(true);
       } catch {
@@ -195,87 +186,36 @@ export const ForkTimeline: React.FC = () => {
 
     setForkIsRefreshing(true);
     try {
-      const newForks = await backend.getUserForks();
+      const refreshed = await backend.refreshForks();
 
-      // Merge with existing forks, preserving read status
-      const existingForkMap = new Map(forks.map(f => [f.id, f]));
-      const mergedForks: ForkRepo[] = newForks.map(newFork => {
-        const existing = existingForkMap.get(newFork.id);
-        if (existing) {
-          // Preserve local state
-          return {
-            ...newFork,
-            has_unread: existing.has_unread,
-            upstream_updated_at: existing.upstream_updated_at,
-          };
-        }
-        // New fork — mark as unread if upstream has updates
-        return {
-          ...newFork,
-          has_unread: false,
-          upstream_updated_at: newFork.source?.updated_at,
-        };
-      });
+      // Count new unread forks
+      const existingIds = new Set(forks.map(f => f.id));
+      const newCount = refreshed.filter(f => !existingIds.has(f.id)).length;
 
-      // Check for upstream updates on existing forks - mark as unread if source has newer commits
-      const updatedForks = mergedForks.map(fork => {
-        const existing = existingForkMap.get(fork.id);
-        if (existing) {
-          // Compare: if source updated since last check, mark as unread
-          const prevUpstreamTime = existing.upstream_updated_at;
-          const currentUpstreamTime = fork.source?.updated_at;
-          if (prevUpstreamTime && currentUpstreamTime) {
-            const hasNewUpdates = new Date(currentUpstreamTime) > new Date(prevUpstreamTime);
-            if (hasNewUpdates) {
-              // Mark as unread by removing from readForks
-              useAppStore.setState(state => {
-                const newReadForks = new Set(state.readForks);
-                newReadForks.delete(fork.id);
-                return { readForks: newReadForks };
-              });
-              return {
-                ...fork,
-                upstream_updated_at: currentUpstreamTime,
-              };
-            }
-          }
-          return {
-            ...fork,
-            upstream_updated_at: existing.upstream_updated_at || fork.source?.updated_at,
-          };
-        }
-        return fork;
-      });
-
-      setForks(updatedForks);
+      setForks(refreshed);
       const now = new Date().toISOString();
       setLastRefreshTime(now);
 
       // Pre-check sync status for all forks (out-of-date vs already up-to-date)
-      const syncChecks: Promise<void>[] = updatedForks.map(async (fork) => {
+      const parentUpdates = new Map<number, { fullName: string; htmlUrl: string }>();
+      const syncChecks: Promise<void>[] = refreshed.map(async (fork) => {
         if (!fork.fork || !fork.full_name?.includes('/')) return;
         const [owner, repo] = fork.full_name.split('/');
         const branch = fork.default_branch || 'main';
         try {
           const result = await backend.checkForkSyncNeeded(
-            owner, 
-            repo, 
-            branch, 
+            owner,
+            repo,
+            branch,
             fork.parent?.full_name || fork.source?.full_name
           );
           setNeedsSyncMap(prev => ({ ...prev, [fork.id]: result.needsSync }));
-          
+
           if (result.parentFullName && result.parentHtmlUrl && !fork.parent && !fork.source) {
-            const currentForks = useAppStore.getState().forks;
-            setForks(currentForks.map(f => f.id === fork.id ? { 
-              ...f, 
-              parent: { 
-                id: 0, 
-                full_name: result.parentFullName as string, 
-                name: (result.parentFullName as string)?.split('/')[1] || '',
-                html_url: result.parentHtmlUrl as string 
-              } 
-            } : f));
+            parentUpdates.set(fork.id, {
+              fullName: result.parentFullName as string,
+              htmlUrl: result.parentHtmlUrl as string,
+            });
           }
         } catch {
           setNeedsSyncMap(prev => ({ ...prev, [fork.id]: false }));
@@ -283,8 +223,23 @@ export const ForkTimeline: React.FC = () => {
       });
       await Promise.all(syncChecks);
 
-      // Count new forks
-      const newCount = newForks.filter(f => !existingForkMap.has(f.id)).length;
+      // Batch apply parent updates to avoid race conditions from concurrent setForks
+      if (parentUpdates.size > 0) {
+        setForks(useAppStore.getState().forks.map(f => {
+          const update = parentUpdates.get(f.id);
+          if (!update) return f;
+          return {
+            ...f,
+            parent: {
+              id: 0,
+              full_name: update.fullName,
+              name: update.fullName.split('/')[1] || '',
+              html_url: update.htmlUrl,
+            },
+          };
+        }));
+      }
+
       if (newCount > 0) {
         toast(language === 'zh'
           ? `刷新完成！发现 ${newCount} 个新Fork。`
@@ -533,7 +488,14 @@ export const ForkTimeline: React.FC = () => {
 
             {/* Mark All Read Button */}
             <button
-              onClick={() => { markAllForksAsRead(); backend.syncSettings({ readForks: [...useAppStore.getState().readForks] }).catch((err) => { console.error('[ForkTimeline] syncSettings failed:', err); }); }}
+              onClick={async () => {
+                try {
+                  await backend.markAllForksAsRead();
+                  setForks(useAppStore.getState().forks.map(f => ({ ...f, has_unread: false })));
+                } catch (err) {
+                  console.error('[ForkTimeline] markAllForksAsRead failed:', err);
+                }
+              }}
               className="flex items-center space-x-2 px-4 py-2 text-brand-indigo bg-brand-indigo/10 rounded-lg hover:bg-brand-indigo/20 transition-colors"
             >
               <Check className="w-4 h-4" />
@@ -692,7 +654,7 @@ export const ForkTimeline: React.FC = () => {
           </div>
         ) : (
           paginatedForks.map((fork) => {
-            const isUnread = isForkUnread(fork.id);
+            const isUnread = !!fork.has_unread;
             const isWorkflowsExpanded = expandedWorkflows.has(fork.id);
             const workflows = workflowsMap[fork.id] || [];
             const isLoadingWf = loadingWorkflows.has(fork.id);
@@ -708,7 +670,10 @@ export const ForkTimeline: React.FC = () => {
                 isWorkflowsExpanded={isWorkflowsExpanded}
                 onToggleWorkflows={() => toggleWorkflows(fork.id)}
                 onSyncUpstream={() => handleSyncUpstream(fork)}
-                onMarkAsRead={() => { markForkAsRead(fork.id); backend.syncSettings({ readForks: [...useAppStore.getState().readForks] }).catch((err) => { console.error('[ForkTimeline] syncSettings failed:', err); }); }}
+                onMarkAsRead={() => {
+                  backend.markForkAsRead(fork.id).catch((err) => { console.error('[ForkTimeline] markForkAsRead failed:', err); });
+                  setForks(useAppStore.getState().forks.map(f => f.id === fork.id ? { ...f, has_unread: false } : f));
+                }}
                 onRunWorkflow={(workflowPath, workflowName) => handleRunWorkflow(fork.id, workflowPath, workflowName)}
                 workflows={workflows}
                 isLoadingWorkflows={isLoadingWf}

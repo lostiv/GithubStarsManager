@@ -107,11 +107,11 @@ const ForkCard: React.FC<ForkCardProps> = memo(({
                     : '-'}
                 </span>
               </div>
-              {fork.source?.updated_at && (
+              {fork.source?.pushed_at && (
                 <div className="flex items-center gap-1.5">
                   <GitFork className="w-3.5 h-3.5" />
                   <span>
-                    {formatDistanceToNow(new Date(fork.source.updated_at), { addSuffix: true })}
+                    {formatDistanceToNow(new Date(fork.source.pushed_at), { addSuffix: true })}
                   </span>
                 </div>
               )}

@@ -110,6 +110,28 @@ export function initializeSchema(db: Database.Database): void {
       key TEXT PRIMARY KEY,
       value TEXT
     );
+
+    CREATE TABLE IF NOT EXISTS forks (
+      id INTEGER PRIMARY KEY,
+      name TEXT NOT NULL,
+      full_name TEXT NOT NULL UNIQUE,
+      description TEXT,
+      html_url TEXT NOT NULL,
+      stargazers_count INTEGER DEFAULT 0,
+      forks_count INTEGER DEFAULT 0,
+      forks INTEGER DEFAULT 0,
+      language TEXT,
+      created_at TEXT,
+      updated_at TEXT,
+      pushed_at TEXT,
+      default_branch TEXT,
+      owner TEXT NOT NULL,
+      source TEXT,
+      parent TEXT,
+      is_read INTEGER NOT NULL DEFAULT 1,
+      upstream_pushed_at TEXT,
+      fetched_at TEXT
+    );
   `);
 
   addColumnIfMissing(db, 'ai_configs', 'reasoning_effort', 'TEXT');

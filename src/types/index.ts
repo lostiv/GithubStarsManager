@@ -92,6 +92,7 @@ export interface ForkRepo {
     stargazers_count: number;
     forks_count: number;
     updated_at: string;
+    pushed_at: string;
     owner: {
       login: string;
       avatar_url: string;
