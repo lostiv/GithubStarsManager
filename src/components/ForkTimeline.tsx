@@ -197,6 +197,7 @@ export const ForkTimeline: React.FC = () => {
       setLastRefreshTime(now);
 
       // Pre-check sync status for all forks (out-of-date vs already up-to-date)
+      const parentUpdates = new Map<number, { fullName: string; htmlUrl: string }>();
       const syncChecks: Promise<void>[] = refreshed.map(async (fork) => {
         if (!fork.fork || !fork.full_name?.includes('/')) return;
         const [owner, repo] = fork.full_name.split('/');
@@ -211,22 +212,33 @@ export const ForkTimeline: React.FC = () => {
           setNeedsSyncMap(prev => ({ ...prev, [fork.id]: result.needsSync }));
 
           if (result.parentFullName && result.parentHtmlUrl && !fork.parent && !fork.source) {
-            const currentForks = useAppStore.getState().forks;
-            setForks(currentForks.map(f => f.id === fork.id ? {
-              ...f,
-              parent: {
-                id: 0,
-                full_name: result.parentFullName as string,
-                name: (result.parentFullName as string)?.split('/')[1] || '',
-                html_url: result.parentHtmlUrl as string
-              }
-            } : f));
+            parentUpdates.set(fork.id, {
+              fullName: result.parentFullName as string,
+              htmlUrl: result.parentHtmlUrl as string,
+            });
           }
         } catch {
           setNeedsSyncMap(prev => ({ ...prev, [fork.id]: false }));
         }
       });
       await Promise.all(syncChecks);
+
+      // Batch apply parent updates to avoid race conditions from concurrent setForks
+      if (parentUpdates.size > 0) {
+        setForks(useAppStore.getState().forks.map(f => {
+          const update = parentUpdates.get(f.id);
+          if (!update) return f;
+          return {
+            ...f,
+            parent: {
+              id: 0,
+              full_name: update.fullName,
+              name: update.fullName.split('/')[1] || '',
+              html_url: update.htmlUrl,
+            },
+          };
+        }));
+      }
 
       if (newCount > 0) {
         toast(language === 'zh'

@@ -40,7 +40,7 @@ function dbRowToFork(row: Record<string, unknown>) {
     owner,
     source,
     ...(parent ? { parent } : {}),
-    has_unread: !(row.is_read as boolean),
+    has_unread: row.is_read === 0,
     upstream_updated_at: row.upstream_pushed_at ?? undefined,
   };
 }
@@ -75,7 +75,12 @@ router.post('/api/forks/refresh', async (_req, res) => {
       'User-Agent': 'GithubStarsManager-Backend',
     };
 
+    const maxPages = 100;
     while (true) {
+      if (page > maxPages) {
+        console.warn(`[forks] Reached max page limit (${maxPages}), stopping pagination`);
+        break;
+      }
       const url = `https://api.github.com/user/repos?type=forks&sort=updated&per_page=${perPage}&page=${page}`;
       const result = await proxyRequest({ url, method: 'GET', headers, timeout: 30000 });
       if (result.status !== 200) {
