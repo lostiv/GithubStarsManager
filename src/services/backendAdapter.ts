@@ -361,7 +361,7 @@ class BackendAdapter {
   async getForks(): Promise<ForkRepo[]> {
     if (!this._backendUrl) throw new Error('Backend not available');
     const res = await this.fetchWithTimeout(
-      `${this._backendUrl}/api/forks`,
+      `${this._backendUrl}/forks`,
       { headers: this.getAuthHeaders() }
     );
     if (!res.ok) {
@@ -373,7 +373,7 @@ class BackendAdapter {
   async refreshForks(): Promise<ForkRepo[]> {
     if (!this._backendUrl) throw new Error('Backend not available');
     const res = await this.fetchWithTimeout(
-      `${this._backendUrl}/api/forks/refresh`,
+      `${this._backendUrl}/forks/refresh`,
       {
         method: 'POST',
         headers: this.getAuthHeaders(),
@@ -388,7 +388,7 @@ class BackendAdapter {
   async markForkAsRead(forkId: number): Promise<void> {
     if (!this._backendUrl) throw new Error('Backend not available');
     const res = await this.fetchWithTimeout(
-      `${this._backendUrl}/api/forks/${forkId}/mark-read`,
+      `${this._backendUrl}/forks/${forkId}/mark-read`,
       {
         method: 'POST',
         headers: this.getAuthHeaders(),
@@ -402,7 +402,7 @@ class BackendAdapter {
   async markAllForksAsRead(): Promise<void> {
     if (!this._backendUrl) throw new Error('Backend not available');
     const res = await this.fetchWithTimeout(
-      `${this._backendUrl}/api/forks/mark-all-read`,
+      `${this._backendUrl}/forks/mark-all-read`,
       {
         method: 'POST',
         headers: this.getAuthHeaders(),
