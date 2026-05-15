@@ -75,7 +75,7 @@ export async function refreshForksFromGitHub(): Promise<{ forks: Record<string, 
       let upstreamPushedAt = sourcePushedAt ?? null;
 
       if (existing) {
-        if (sourcePushedAt && existing.upstream_pushed_at && sourcePushedAt !== existing.upstream_pushed_at) {
+        if (sourcePushedAt && sourcePushedAt !== existing.upstream_pushed_at) {
           isRead = 0;
           upstreamPushedAt = sourcePushedAt;
         } else {

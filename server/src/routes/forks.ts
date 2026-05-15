@@ -82,13 +82,15 @@ router.post('/api/forks/:id/mark-read', (req, res) => {
       return;
     }
 
-    let upstreamPushedAt: string | null = null;
     try {
       const source = JSON.parse(fork.source || '{}');
-      upstreamPushedAt = source?.pushed_at ?? null;
+      const sourcePushedAt = source?.pushed_at;
+      if (sourcePushedAt) {
+        db.prepare('UPDATE forks SET is_read = 1, upstream_pushed_at = ? WHERE id = ?').run(sourcePushedAt, id);
+      } else {
+        db.prepare('UPDATE forks SET is_read = 1 WHERE id = ?').run(id);
+      }
     } catch { /* ignore */ }
-
-    db.prepare('UPDATE forks SET is_read = 1, upstream_pushed_at = ? WHERE id = ?').run(upstreamPushedAt, id);
     res.json({ id, marked_read: true });
   } catch (err) {
     console.error('POST /api/forks/:id/mark-read error:', err);
@@ -104,15 +106,19 @@ router.post('/api/forks/mark-all-read', (_req, res) => {
     // For each fork, update upstream_pushed_at to the latest source.pushed_at
     const rows = db.prepare('SELECT id, source FROM forks WHERE is_read = 0').all() as Array<{ id: number; source: string }>;
     const updateStmt = db.prepare('UPDATE forks SET is_read = 1, upstream_pushed_at = ? WHERE id = ?');
+    const markReadOnlyStmt = db.prepare('UPDATE forks SET is_read = 1 WHERE id = ?');
 
     const markAll = db.transaction(() => {
       for (const row of rows) {
-        let upstreamPushedAt: string | null = null;
         try {
           const source = JSON.parse(row.source || '{}');
-          upstreamPushedAt = source?.pushed_at ?? null;
+          const sourcePushedAt = source?.pushed_at;
+          if (sourcePushedAt) {
+            updateStmt.run(sourcePushedAt, row.id);
+          } else {
+            markReadOnlyStmt.run(row.id);
+          }
         } catch { /* ignore */ }
-        updateStmt.run(upstreamPushedAt, row.id);
       }
     });
 
