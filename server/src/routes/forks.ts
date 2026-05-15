@@ -90,7 +90,9 @@ router.post('/api/forks/:id/mark-read', (req, res) => {
       } else {
         db.prepare('UPDATE forks SET is_read = 1 WHERE id = ?').run(id);
       }
-    } catch { /* ignore */ }
+    } catch {
+      db.prepare('UPDATE forks SET is_read = 1 WHERE id = ?').run(id);
+    }
     res.json({ id, marked_read: true });
   } catch (err) {
     console.error('POST /api/forks/:id/mark-read error:', err);
@@ -118,8 +120,9 @@ router.post('/api/forks/mark-all-read', (_req, res) => {
           } else {
             markReadOnlyStmt.run(row.id);
           }
-        } catch { /* ignore */ }
-      }
+        } catch {
+          markReadOnlyStmt.run(row.id);
+        }
     });
 
     markAll();

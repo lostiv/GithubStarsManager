@@ -103,9 +103,16 @@ const ForkCard: React.FC<ForkCardProps> = memo(({
               <div className="flex items-center gap-1.5">
                 <GitFork className="w-3.5 h-3.5" />
                 <span>
-                  {fork.source?.pushed_at
-                    ? formatDistanceToNow(new Date(fork.source.pushed_at), { addSuffix: true, locale: language === 'zh' ? zhCN : undefined })
-                    : '-'}
+                  {(() => {
+                    const pushedAt = fork.source?.pushed_at;
+                    if (pushedAt) {
+                      const date = new Date(pushedAt);
+                      if (!isNaN(date.getTime())) {
+                        return formatDistanceToNow(date, { addSuffix: true, locale: language === 'zh' ? zhCN : undefined });
+                      }
+                    }
+                    return '-';
+                  })()}
                 </span>
               </div>
             </div>
