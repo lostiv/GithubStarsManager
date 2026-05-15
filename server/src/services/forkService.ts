@@ -12,6 +12,53 @@ export function getGitHubToken(): string {
   return decrypt(tokenRow.value, config.encryptionKey);
 }
 
+// 单个 fork 仓库的详情数据，包含 parent 信息
+async function fetchForkDetail(
+  fullName: string,
+  headers: Record<string, string>
+): Promise<Record<string, unknown> | null> {
+  const url = `https://api.github.com/repos/${fullName}`;
+  const result = await proxyRequest({ url, method: 'GET', headers, timeout: 15000 });
+  if (result.status !== 200) {
+    console.warn(`[forks] Failed to fetch detail for ${fullName}: HTTP ${result.status}`);
+    return null;
+  }
+  return result.data as Record<string, unknown>;
+}
+
+// 批量获取 fork 详情，每次最多 10 个并发
+async function enrichForksWithParent(
+  forks: Record<string, unknown>[],
+  headers: Record<string, string>
+): Promise<void> {
+  const BATCH_SIZE = 10;
+  for (let i = 0; i < forks.length; i += BATCH_SIZE) {
+    const batch = forks.slice(i, i + BATCH_SIZE);
+    const results = await Promise.allSettled(
+      batch.map(async (fork) => {
+        if (fork.parent || fork.source) return; // 已有 parent 信息则跳过
+        const fullName = fork.full_name as string;
+        if (!fullName?.includes('/')) return;
+        const detail = await fetchForkDetail(fullName, headers);
+        if (detail?.parent) {
+          fork.parent = detail.parent;
+        }
+        if (detail?.source) {
+          fork.source = detail.source;
+        }
+      })
+    );
+    // 打印失败的任务
+    for (let j = 0; j < results.length; j++) {
+      if (results[j].status === 'rejected') {
+        console.warn(`[forks] enrich batch error for ${batch[j].full_name}:`, results[j].reason);
+      }
+    }
+  }
+  const enriched = forks.filter(f => f.parent || f.source).length;
+  console.log(`[forks] Enriched ${enriched}/${forks.length} forks with parent info`);
+}
+
 export async function refreshForksFromGitHub(): Promise<{ forks: Record<string, unknown>[]; count: number }> {
   const db = getDb();
   const token = getGitHubToken();
@@ -43,6 +90,9 @@ export async function refreshForksFromGitHub(): Promise<{ forks: Record<string, 
     if (data.length < perPage) break;
     page++;
   }
+
+  // 列表接口不返回 parent/source，需要逐个获取 fork 详情来补全
+  await enrichForksWithParent(allForks, headers);
 
   // Load existing state from DB for comparison
   const existingRows = db.prepare('SELECT id, upstream_pushed_at, is_read FROM forks').all() as Array<{
