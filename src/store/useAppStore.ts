@@ -770,29 +770,35 @@ export const useAppStore = create<AppState & AppActions>()(
       setGitHubToken: (token) => {
         console.log('Setting GitHub token:', !!token);
         set({ githubToken: token });
-        // 异步同步到后端，确保 DB 中的加密 token 是最新的
-        if (token) {
-          import('../services/backendAdapter').then(({ backend }) => {
-            if (backend.isAvailable) {
-              backend.syncSettings({ github_token: token }).catch(() => {});
-            }
-          }).catch(() => {});
-        }
+        // 异步同步到后端，清空/设置都会下发，避免后端残留旧凭据
+        import('../services/backendAdapter').then(({ backend }) => {
+          if (backend.isAvailable) {
+            backend.syncSettings({ github_token: token }).catch(() => {});
+          }
+        }).catch(() => {});
       },
-      logout: () => set({
-        user: null,
-        githubToken: null,
-        isAuthenticated: false,
-        repositories: [],
-        releases: [],
-        releaseSubscriptions: new Set(),
-        readReleases: new Set(),
-        forks: [],
-        readForks: new Set(),
-        analyzingRepositoryIds: new Set(),
-        searchResults: [],
-        lastSync: null,
-      }),
+      logout: () => {
+        set({
+          user: null,
+          githubToken: null,
+          isAuthenticated: false,
+          repositories: [],
+          releases: [],
+          releaseSubscriptions: new Set(),
+          readReleases: new Set(),
+          forks: [],
+          readForks: new Set(),
+          analyzingRepositoryIds: new Set(),
+          searchResults: [],
+          lastSync: null,
+        });
+        // 通知后端清除 GitHub Token，避免凭据残留
+        import('../services/backendAdapter').then(({ backend }) => {
+          if (backend.isAvailable) {
+            backend.syncSettings({ github_token: null }).catch(() => {});
+          }
+        }).catch(() => {});
+      },
 
       // Repository actions
       setRepositories: (repositories) => set((state) => {
