@@ -52,7 +52,8 @@ async function enrichForksWithParent(
     for (let j = 0; j < results.length; j++) {
       if (results[j].status === 'rejected') {
         const repo = String(batch[j]?.full_name ?? 'unknown');
-        const reason = results[j].reason instanceof Error ? results[j].reason.message : 'UnknownError';
+        const r = results[j] as PromiseRejectedResult;
+        const reason = r.reason instanceof Error ? r.reason.message : 'UnknownError';
         console.warn(`[forks] enrich batch error for ${repo}: ${reason}`);
       }
     }
