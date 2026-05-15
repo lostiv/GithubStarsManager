@@ -37,7 +37,6 @@ class BackendAdapter {
               console.log(`✅ Backend connected: ${baseUrl}`);
               // 连接建立后同步 GitHub Token 到后端，确保最新的 Token 被加密存储
               try {
-                const { useAppStore } = await import('../store/useAppStore');
                 const token = useAppStore.getState().githubToken;
                 if (token) {
                   await this.syncSettings({ github_token: token });
