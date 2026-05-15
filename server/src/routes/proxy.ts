@@ -171,12 +171,15 @@ router.post('/api/proxy/ai', async (req, res) => {
 router.post('/api/proxy/webdav', async (req, res) => {
   try {
     const db = getDb();
-    const { configId, method, path, body: requestBody, headers: extraHeaders } = req.body as {
+    const { configId, method, path, body: requestBody, headers: extraHeaders, inlineUrl, inlineUsername, inlinePassword } = req.body as {
       configId: string;
       method: string;
       path: string;
       body?: string;
       headers?: Record<string, string>;
+      inlineUrl?: string;
+      inlineUsername?: string;
+      inlinePassword?: string;
     };
 
     if (!configId) {
@@ -184,15 +187,24 @@ router.post('/api/proxy/webdav', async (req, res) => {
       return;
     }
 
+    let username: string;
+    let password: string;
+    let baseUrl: string;
+
     const webdavConfig = db.prepare('SELECT * FROM webdav_configs WHERE id = ?').get(configId) as Record<string, unknown> | undefined;
-    if (!webdavConfig) {
+    if (webdavConfig) {
+      password = decrypt(webdavConfig.password_encrypted as string, config.encryptionKey);
+      username = webdavConfig.username as string;
+      baseUrl = webdavConfig.url as string;
+    } else if (inlineUrl && inlineUsername !== undefined && inlinePassword !== undefined) {
+      // 新配置尚未同步到 DB，使用前端传入的凭据直连
+      baseUrl = inlineUrl;
+      username = inlineUsername;
+      password = inlinePassword;
+    } else {
       res.status(404).json({ error: 'WebDAV config not found', code: 'WEBDAV_CONFIG_NOT_FOUND' });
       return;
     }
-
-    const password = decrypt(webdavConfig.password_encrypted as string, config.encryptionKey);
-    const username = webdavConfig.username as string;
-    const baseUrl = webdavConfig.url as string;
 
     const targetUrl = `${baseUrl}${path}`;
     const credentials = Buffer.from(`${username}:${password}`).toString('base64');
