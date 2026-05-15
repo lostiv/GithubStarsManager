@@ -334,7 +334,11 @@ export async function performAutoBackup(): Promise<{
 
     const basePath = activeConfig.path.endsWith('/') ? activeConfig.path : `${activeConfig.path}/`;
 
-    await webdavUpload(activeConfig.url, activeConfig.username, activeConfig.password, `${basePath}${filename}`, JSON.stringify(data));
+    // 使用 ENCRYPTION_KEY 加密整个备份文件
+    const jsonStr = JSON.stringify(data);
+    const encrypted = encrypt(jsonStr, config.encryptionKey);
+    const envelope = JSON.stringify({ v: 2, data: encrypted });
+    await webdavUpload(activeConfig.url, activeConfig.username, activeConfig.password, `${basePath}${filename}`, envelope);
 
     setLastBackupTime(Date.now());
 
@@ -414,6 +418,20 @@ async function checkAndBackup(): Promise<void> {
   if (lastBackupTime && (Date.now() - lastBackupTime) < intervalMs) return;
 
   await performAutoBackup();
+}
+
+// 解密备份文件内容：支持 v2 加密格式和 v1 明文格式
+export function decryptBackupContent(content: string): string {
+  try {
+    const envelope = JSON.parse(content);
+    if (envelope.v === 2 && typeof envelope.data === 'string') {
+      return decrypt(envelope.data, config.encryptionKey);
+    }
+  } catch {
+    throw new Error('备份文件格式无法识别或已损坏');
+  }
+  // v1 明文格式，直接返回
+  return content;
 }
 
 export function getBackupStatus(): {

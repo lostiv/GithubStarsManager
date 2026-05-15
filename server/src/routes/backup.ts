@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { getDb } from '../db/connection.js';
-import { getBackupStatus, performAutoBackup } from '../services/backupService.js';
+import { getBackupStatus, performAutoBackup, decryptBackupContent } from '../services/backupService.js';
 
 const router = Router();
 
@@ -132,6 +132,25 @@ router.post('/api/backup/trigger', async (_req, res) => {
   } catch (err) {
     console.error('POST /api/backup/trigger error:', err);
     res.status(500).json({ success: false, message: '触发备份失败', error: 'TRIGGER_BACKUP_FAILED' });
+  }
+});
+
+// POST /api/backup/decrypt
+router.post('/api/backup/decrypt', (req, res) => {
+  try {
+    const { content } = req.body as { content?: string };
+    if (!content || typeof content !== 'string') {
+      res.status(400).json({ error: '缺少备份文件内容', code: 'VALIDATION_FAILED' });
+      return;
+    }
+    const decrypted = decryptBackupContent(content);
+    res.json(JSON.parse(decrypted));
+  } catch (err) {
+    console.error('POST /api/backup/decrypt error:', err);
+    res.status(400).json({
+      error: err instanceof Error ? err.message : '解密失败',
+      code: 'DECRYPT_BACKUP_FAILED',
+    });
   }
 });
 

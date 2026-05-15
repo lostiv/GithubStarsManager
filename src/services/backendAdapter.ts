@@ -963,6 +963,18 @@ class BackendAdapter {
     }>;
   }
 
+  async decryptBackup(content: string): Promise<Record<string, unknown>> {
+    if (!this._backendUrl) throw new Error('Backend not available');
+
+    const res = await this.fetchWithTimeout(`${this._backendUrl}/backup/decrypt`, {
+      method: 'POST',
+      headers: this.getAuthHeaders(),
+      body: JSON.stringify({ content }),
+    });
+    if (!res.ok) await this.throwTranslatedError(res, 'Decrypt backup error');
+    return res.json() as Promise<Record<string, unknown>>;
+  }
+
   // Auto-sync settings
 
   async fetchAutoSyncSettings(): Promise<{
