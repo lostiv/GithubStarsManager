@@ -57,7 +57,7 @@ function parseJsonField(value: unknown): unknown {
   if (typeof value !== 'string' || !value) return value;
   try {
     const parsed = JSON.parse(value);
-    return Array.isArray(parsed) ? parsed : value;
+    return (Array.isArray(parsed) || (typeof parsed === 'object' && parsed !== null)) ? parsed : value;
   } catch { return value; }
 }
 
@@ -72,17 +72,15 @@ export function exportAllData(db: Database.Database, mask = true): Record<string
   }));
   const releases = (db.prepare('SELECT * FROM releases').all() as Record<string, unknown>[]).map((row) => {
     const assets = parseJsonField(row.assets);
-    const repository = { id: row.repo_id, full_name: row.repo_full_name, name: row.repo_name };
-    const { repo_id: _ri, repo_full_name: _rfn, repo_name: _rn, ...rest } = row;
     return {
-      ...rest,
+      ...row,
       prerelease: !!row.prerelease,
       draft: !!row.draft,
       is_read: !!row.is_read,
       assets: Array.isArray(assets) ? assets : [],
       zipball_url: row.zipball_url ?? undefined,
       tarball_url: row.tarball_url ?? undefined,
-      repository,
+      repository: { id: row.repo_id, full_name: row.repo_full_name, name: row.repo_name },
     };
   });
   const categories = (db.prepare('SELECT * FROM categories').all() as Record<string, unknown>[]).map((row) => ({

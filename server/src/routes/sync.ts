@@ -137,6 +137,16 @@ router.post('/api/sync/import', (req, res) => {
           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `);
         for (const f of forks) {
+          if (typeof f.id !== 'number') {
+            throw new Error('Invalid fork data: missing or invalid id');
+          }
+          if (
+            (f.owner !== undefined && f.owner !== null && typeof f.owner !== 'string' && typeof f.owner !== 'object') ||
+            (f.source !== undefined && f.source !== null && typeof f.source !== 'string' && typeof f.source !== 'object') ||
+            (f.parent !== undefined && f.parent !== null && typeof f.parent !== 'string' && typeof f.parent !== 'object')
+          ) {
+            throw new Error('Invalid fork data: invalid nested fork payload');
+          }
           forkStmt.run(
             f.id, f.name ?? '', f.full_name ?? '', f.description ?? null, f.html_url ?? null,
             f.stargazers_count ?? 0, f.forks_count ?? 0, f.forks ?? 0,

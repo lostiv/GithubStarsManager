@@ -301,7 +301,12 @@ export const BackupPanel: React.FC<BackupPanelProps> = ({ t }) => {
         const normalizedReleases = (backupData.releases as Record<string, unknown>[]).map((rel) => {
           // 兼容旧备份：assets JSON 字符串 → 数组
           if (typeof rel.assets === 'string' && rel.assets) {
-            try { rel = { ...rel, assets: JSON.parse(rel.assets) }; } catch { /* keep original */ }
+            try {
+              const parsed = JSON.parse(rel.assets);
+              if (Array.isArray(parsed)) {
+                rel = { ...rel, assets: parsed };
+              }
+            } catch { /* keep original */ }
           }
           // 兼容旧备份：扁平 repo_id/repo_full_name/repo_name → 嵌套 repository 对象
           if (!rel.repository && (rel.repo_id || rel.repo_full_name)) {
@@ -330,6 +335,9 @@ export const BackupPanel: React.FC<BackupPanelProps> = ({ t }) => {
           };
         });
         setForks(normalizedForks as ForkRepo[]);
+      } else {
+        // 旧备份无 forks 字段时，按覆盖恢复语义清空
+        setForks([]);
       }
 
       // 分类
