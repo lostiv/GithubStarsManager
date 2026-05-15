@@ -54,7 +54,7 @@ router.get('/api/repositories', (req, res) => {
     const limit = Math.min(10000, Math.max(1, parseInt(req.query.limit as string) || 100));
     // 归一化 search 参数：Express 的 query parser 在 ?search=a&search=b 时会将其解析为数组
     const rawSearch = req.query.search;
-    const search = Array.isArray(rawSearch) ? rawSearch[0] : typeof rawSearch === 'string' ? rawSearch : undefined;
+    const search: string | undefined = Array.isArray(rawSearch) ? (typeof rawSearch[0] === 'string' ? rawSearch[0] : undefined) : typeof rawSearch === 'string' ? rawSearch : undefined;
     const offset = (page - 1) * limit;
 
     let sql = 'SELECT * FROM repositories';
