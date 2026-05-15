@@ -34,16 +34,28 @@ export const Header: React.FC = () => {
 
   // 定期查询后端自动同步状态，获取自动同步的最后执行时间
   useEffect(() => {
+    let disposed = false;
+    let inFlight = false;
+
     const fetchStatus = async () => {
-      if (!backend.isAvailable) return;
+      if (!backend.isAvailable || inFlight || disposed) return;
+      inFlight = true;
       try {
         const status = await backend.fetchAutoSyncStatus();
-        setAutoSyncLastTime(status.lastSyncTime);
-      } catch { /* silent */ }
+        if (!disposed) {
+          setAutoSyncLastTime(status.lastSyncTime);
+        }
+      } catch { /* silent */ } finally {
+        inFlight = false;
+      }
     };
+
     fetchStatus();
-    const timer = setInterval(fetchStatus, 60000);
-    return () => clearInterval(timer);
+    const timer = setInterval(() => { void fetchStatus(); }, 60000);
+    return () => {
+      disposed = true;
+      clearInterval(timer);
+    };
   }, []);
 
   useEffect(() => {
