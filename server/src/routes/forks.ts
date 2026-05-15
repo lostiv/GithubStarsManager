@@ -123,6 +123,7 @@ router.post('/api/forks/mark-all-read', (_req, res) => {
         } catch {
           markReadOnlyStmt.run(row.id);
         }
+      }
     });
 
     markAll();
