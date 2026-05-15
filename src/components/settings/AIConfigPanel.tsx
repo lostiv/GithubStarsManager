@@ -141,6 +141,9 @@ export const AIConfigPanel: React.FC<AIConfigPanelProps> = ({ t }) => {
           isActive: existingConfig.isActive,
         };
         updateAIConfig(editingId, updates);
+      } else {
+        toast(t('配置不存在，可能已被删除', 'Configuration not found, may have been deleted'), 'error');
+        return;
       }
     } else {
       const config: AIConfig = {
@@ -653,7 +656,12 @@ Focus on practicality and accurate categorization to help users quickly understa
                   type="radio"
                   name="activeAI"
                   checked={config.id === activeAIConfig}
-                  onChange={() => setActiveAIConfig(config.id)}
+                  onChange={() => {
+                    setActiveAIConfig(config.id);
+                    // 激活后立即同步到后端，避免分析等功能在后端找不到活跃配置
+                    const updated = useAppStore.getState().aiConfigs;
+                    backend.syncAIConfigs(updated).catch(() => { /* 静默失败 */ });
+                  }}
                   className="w-4 h-4 text-gray-700 dark:text-text-secondary bg-light-surface border-black/[0.06] focus:ring-purple-500 dark:focus:ring-purple-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-white/[0.04] dark:border-white/[0.04]"
                 />
                 <div>
@@ -711,6 +719,8 @@ Focus on practicality and accurate categorization to help users quickly understa
                     if (confirmed) {
                       if (config.id) {
                         deleteAIConfig(config.id);
+                        // 删除后同步到后端，避免后续使用时后端仍有该配置
+                        backend.syncAIConfigs(useAppStore.getState().aiConfigs).catch(() => {});
                       } else {
                         toast(t('删除失败：配置ID无效', 'Delete failed: Invalid config ID'), 'error');
                       }

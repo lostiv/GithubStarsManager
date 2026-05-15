@@ -100,10 +100,9 @@ export const BackupPanel: React.FC<BackupPanelProps> = ({ t }) => {
     }
     setAutoSaving(true);
     try {
-      // 启用自动备份时，先同步 WebDAV 配置到后端，确保校验时有活跃配置
-      if (autoEnabled) {
-        await backend.syncWebDAVConfigs(webdavConfigs);
-      }
+      // 始终同步 WebDAV 配置到后端，确保校验时能查到活跃配置
+      // 不依赖 autoEnabled 判断，因为用户可能在 WebDAV 面板激活配置后尚未同步
+      await backend.syncWebDAVConfigs(webdavConfigs);
       await backend.updateBackupSettings({
         auto_backup_enabled: autoEnabled,
         auto_backup_interval_hours: intervalHours,
@@ -126,6 +125,8 @@ export const BackupPanel: React.FC<BackupPanelProps> = ({ t }) => {
     try {
       // 优先使用后端触发（含保留策略清理）
       if (backend.isAvailable) {
+        // 先同步 WebDAV 配置，确保后端能查到活跃配置
+        await backend.syncWebDAVConfigs(webdavConfigs);
         const result = await backend.triggerBackup();
         if (result.success) {
           setLastBackup(new Date().toISOString());

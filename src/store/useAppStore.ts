@@ -1329,11 +1329,17 @@ export const useAppStore = create<AppState & AppActions>()(
       markForkAsRead: (forkId) => set((state) => {
         const newReadForks = new Set(state.readForks);
         newReadForks.add(forkId);
-        return { readForks: newReadForks };
+        return {
+          readForks: newReadForks,
+          forks: state.forks.map(f => f.id === forkId ? { ...f, is_read: true } : f),
+        };
       }),
       markAllForksAsRead: () => set((state) => {
         const allForkIds = new Set(state.forks.map(f => f.id));
-        return { readForks: allForkIds };
+        return {
+          readForks: allForkIds,
+          forks: state.forks.map(f => ({ ...f, is_read: true })),
+        };
       }),
 
       // Fork Timeline View actions

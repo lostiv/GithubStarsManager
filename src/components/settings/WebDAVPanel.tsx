@@ -64,6 +64,11 @@ export const WebDAVPanel: React.FC<WebDAVPanelProps> = ({ t }) => {
 
     // When editing, preserve existing isActive value from current config
     const existingConfig = editingId ? webdavConfigs.find(c => c.id === editingId) : undefined;
+    if (editingId && !existingConfig) {
+      toast(t('配置不存在，可能已被删除', 'Configuration not found, may have been deleted'), 'error');
+      return;
+    }
+
     const config: WebDAVConfig = {
       id: editingId || Date.now().toString(),
       name: form.name,
@@ -243,7 +248,12 @@ export const WebDAVPanel: React.FC<WebDAVPanelProps> = ({ t }) => {
                   type="radio"
                   name="activeWebDAV"
                   checked={config.id === activeWebDAVConfig}
-                  onChange={() => setActiveWebDAVConfig(config.id)}
+                  onChange={() => {
+                    setActiveWebDAVConfig(config.id);
+                    // 激活后立即同步到后端，避免备份等功能在后端找不到活跃配置
+                    const updated = useAppStore.getState().webdavConfigs;
+                    backend.syncWebDAVConfigs(updated).catch(() => { /* 静默失败 */ });
+                  }}
                   className="w-4 h-4 text-brand-violet bg-light-surface border-black/[0.06] focus:ring-brand-violet dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-white/[0.04] dark:border-white/[0.04]"
                 />
                 <div>
@@ -291,6 +301,8 @@ export const WebDAVPanel: React.FC<WebDAVPanelProps> = ({ t }) => {
                     );
                     if (confirmed) {
                       deleteWebDAVConfig(config.id);
+                      // 删除后同步到后端，避免后续使用时后端仍有该配置
+                      backend.syncWebDAVConfigs(useAppStore.getState().webdavConfigs).catch(() => {});
                     }
                   }}
                   className="p-2 rounded-lg bg-gray-100 text-gray-700 dark:bg-white/[0.04] dark:text-text-secondary hover:bg-gray-200 hover:text-gray-900 dark:hover:bg-white/[0.08] dark:hover:text-text-primary transition-colors"
