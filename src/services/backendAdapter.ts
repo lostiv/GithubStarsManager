@@ -35,12 +35,10 @@ class BackendAdapter {
             if (data.status === 'ok') {
               this._backendUrl = baseUrl;
               console.log(`✅ Backend connected: ${baseUrl}`);
-              // 连接建立后同步 GitHub Token 到后端，确保最新的 Token 被加密存储
+              // 连接建立后同步 GitHub Token 状态到后端，清空/设置都会下发
               try {
                 const token = useAppStore.getState().githubToken;
-                if (token) {
-                  await this.syncSettings({ github_token: token });
-                }
+                await this.syncSettings({ github_token: token || null });
               } catch { /* 非关键，静默失败 */ }
               return;
             }
