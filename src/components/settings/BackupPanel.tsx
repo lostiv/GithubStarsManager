@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Download, Upload, RefreshCw, Cloud, AlertCircle, Clock, CheckCircle2, RotateCw } from 'lucide-react';
-import { AIConfig, WebDAVConfig } from '../../types';
+import { AIConfig, WebDAVConfig, Repository, Release } from '../../types';
 import { useAppStore } from '../../store/useAppStore';
 import { WebDAVService } from '../../services/webdavService';
 import { backend } from '../../services/backendAdapter';
@@ -274,10 +274,34 @@ export const BackupPanel: React.FC<BackupPanelProps> = ({ t }) => {
       }
 
       if (Array.isArray(backupData.repositories)) {
-        setRepositories(backupData.repositories);
+        // 兼容旧备份格式：将 JSON 字符串字段解析为数组
+        const normalizedRepos = (backupData.repositories as Record<string, unknown>[]).map((repo) => {
+          const parseField = (value: unknown): unknown => {
+            if (typeof value !== 'string' || !value) return value;
+            try {
+              const parsed = JSON.parse(value);
+              return Array.isArray(parsed) ? parsed : value;
+            } catch { return value; }
+          };
+          return {
+            ...repo,
+            topics: parseField(repo.topics),
+            ai_tags: parseField(repo.ai_tags),
+            ai_platforms: parseField(repo.ai_platforms),
+            custom_tags: parseField(repo.custom_tags),
+            forks: parseField(repo.forks),
+          };
+        });
+        setRepositories(normalizedRepos as Repository[]);
       }
       if (Array.isArray(backupData.releases)) {
-        setReleases(backupData.releases);
+        const normalizedReleases = (backupData.releases as Record<string, unknown>[]).map((rel) => {
+          if (typeof rel.assets === 'string' && rel.assets) {
+            try { rel = { ...rel, assets: JSON.parse(rel.assets) }; } catch { /* keep original */ }
+          }
+          return rel;
+        });
+        setReleases(normalizedReleases as Release[]);
       }
 
       // 分类
