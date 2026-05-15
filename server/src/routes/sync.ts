@@ -125,6 +125,32 @@ router.post('/api/sync/import', (req, res) => {
         counts.asset_filters = filters.length;
       }
 
+      // Forks
+      const forks = data.forks as Record<string, unknown>[] | undefined;
+      if (Array.isArray(forks) && forks.length > 0) {
+        const forkStmt = db.prepare(`
+          INSERT OR REPLACE INTO forks (
+            id, name, full_name, description, html_url, stargazers_count, forks_count, forks,
+            language, created_at, updated_at, pushed_at, default_branch,
+            owner, source, parent,
+            is_read, upstream_pushed_at, fetched_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `);
+        for (const f of forks) {
+          forkStmt.run(
+            f.id, f.name ?? '', f.full_name ?? '', f.description ?? null, f.html_url ?? null,
+            f.stargazers_count ?? 0, f.forks_count ?? 0, f.forks ?? 0,
+            f.language ?? null, f.created_at ?? null, f.updated_at ?? null, f.pushed_at ?? null,
+            f.default_branch ?? null,
+            typeof f.owner === 'string' ? f.owner : JSON.stringify(f.owner ?? {}),
+            typeof f.source === 'string' ? f.source : JSON.stringify(f.source ?? null),
+            typeof f.parent === 'string' ? f.parent : JSON.stringify(f.parent ?? null),
+            f.is_read ? 1 : 0, f.upstream_pushed_at ?? null, f.fetched_at ?? null
+          );
+        }
+        counts.forks = forks.length;
+      }
+
       // AI Configs — skip masked secrets
       const aiConfigs = data.ai_configs as Record<string, unknown>[] | undefined;
       if (Array.isArray(aiConfigs) && aiConfigs.length > 0) {
