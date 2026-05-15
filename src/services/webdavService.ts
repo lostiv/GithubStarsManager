@@ -160,10 +160,13 @@ export class WebDAVService {
         try {
           // HEAD 请求检测可达性
           const headResponse = await this.proxyFetch('HEAD', this.config.path);
+          // 后端没有该配置时回退直连
+          if (headResponse.status === 404) throw new Error('Config not synced to backend');
           if (headResponse.ok) return true;
 
           // 回退 PROPFIND
           const propfindResponse = await this.proxyFetch('PROPFIND', this.config.path, undefined, { Depth: '0' });
+          if (propfindResponse.status === 404) throw new Error('Config not synced to backend');
           return propfindResponse.ok || propfindResponse.status === 207;
         } catch (proxyErr) {
           console.warn('代理连接测试失败，回退到直连:', proxyErr);
