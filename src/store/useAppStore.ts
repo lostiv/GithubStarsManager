@@ -913,7 +913,9 @@ export const useAppStore = create<AppState & AppActions>()(
         aiConfigs: state.aiConfigs.map(c => ({ ...c, isActive: c.id === activeAIConfig })),
         activeAIConfig
       })),
-      setAIConfigs: (aiConfigs) => set({ aiConfigs }),
+      setAIConfigs: (aiConfigs) => set((state) => ({
+        aiConfigs: aiConfigs.map(c => ({ ...c, isActive: c.id === state.activeAIConfig })),
+      })),
 
       // WebDAV actions
       addWebDAVConfig: (config) => set((state) => ({
@@ -932,7 +934,9 @@ export const useAppStore = create<AppState & AppActions>()(
         webdavConfigs: state.webdavConfigs.map(c => ({ ...c, isActive: c.id === activeWebDAVConfig })),
         activeWebDAVConfig
       })),
-      setWebDAVConfigs: (webdavConfigs) => set({ webdavConfigs }),
+      setWebDAVConfigs: (webdavConfigs) => set((state) => ({
+        webdavConfigs: webdavConfigs.map(c => ({ ...c, isActive: c.id === state.activeWebDAVConfig })),
+      })),
       setLastBackup: (lastBackup) => set({ lastBackup }),
 
       // Search actions
