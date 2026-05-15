@@ -92,7 +92,7 @@ export class AIService {
       try {
         return await backend.proxyAIRequest(this.config.id, requestBody) as Record<string, unknown>;
       } catch (err) {
-        console.warn('Backend proxy failed, falling back to direct fetch:', err);
+        console.warn(`Backend proxy failed for config ${this.config.id || 'unknown'}, falling back to direct fetch:`, err);
       }
     }
     const response = await doDirectFetch();
