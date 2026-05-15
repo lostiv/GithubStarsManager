@@ -138,6 +138,10 @@ router.post('/api/backup/trigger', async (_req, res) => {
 // POST /api/backup/decrypt
 router.post('/api/backup/decrypt', (req, res) => {
   try {
+    if (!req.body || typeof req.body !== 'object' || Array.isArray(req.body)) {
+      res.status(400).json({ error: '请求体格式无效', code: 'VALIDATION_FAILED' });
+      return;
+    }
     const { content } = req.body as { content?: string };
     if (!content || typeof content !== 'string') {
       res.status(400).json({ error: '缺少备份文件内容', code: 'VALIDATION_FAILED' });

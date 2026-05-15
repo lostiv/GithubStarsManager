@@ -196,9 +196,13 @@ router.post('/api/proxy/webdav', async (req, res) => {
       password = decrypt(webdavConfig.password_encrypted as string, config.encryptionKey);
       username = webdavConfig.username as string;
       baseUrl = webdavConfig.url as string;
-    } else if (inlineUrl && inlineUsername !== undefined && inlinePassword !== undefined) {
+    } else if (
+      typeof inlineUrl === 'string' && inlineUrl.trim() &&
+      typeof inlineUsername === 'string' &&
+      typeof inlinePassword === 'string'
+    ) {
       // 新配置尚未同步到 DB，使用前端传入的凭据直连
-      baseUrl = inlineUrl;
+      baseUrl = inlineUrl.trim();
       username = inlineUsername;
       password = inlinePassword;
     } else {

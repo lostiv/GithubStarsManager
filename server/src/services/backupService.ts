@@ -422,14 +422,23 @@ async function checkAndBackup(): Promise<void> {
 
 // 解密备份文件内容：支持 v2 加密格式和 v1 明文格式
 export function decryptBackupContent(content: string): string {
+  let parsed: unknown;
   try {
-    const envelope = JSON.parse(content);
-    if (envelope.v === 2 && typeof envelope.data === 'string') {
-      return decrypt(envelope.data, config.encryptionKey);
-    }
+    parsed = JSON.parse(content);
   } catch {
     throw new Error('备份文件格式无法识别或已损坏');
   }
+
+  if (parsed && typeof parsed === 'object' && 'v' in parsed) {
+    const envelope = parsed as { v?: unknown; data?: unknown };
+    if (envelope.v === 2) {
+      if (typeof envelope.data !== 'string' || !envelope.data) {
+        throw new Error('备份文件格式无法识别或已损坏');
+      }
+      return decrypt(envelope.data, config.encryptionKey);
+    }
+  }
+
   // v1 明文格式，直接返回
   return content;
 }
