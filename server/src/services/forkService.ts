@@ -36,7 +36,7 @@ async function enrichForksWithParent(
     const batch = forks.slice(i, i + BATCH_SIZE);
     const results = await Promise.allSettled(
       batch.map(async (fork) => {
-        if (fork.parent || fork.source) return; // 已有 parent 信息则跳过
+        if (fork.parent && fork.source) return; // 两者都已有时才跳过补全
         const fullName = fork.full_name as string;
         if (!fullName?.includes('/')) return;
         const detail = await fetchForkDetail(fullName, headers);
@@ -51,7 +51,9 @@ async function enrichForksWithParent(
     // 打印失败的任务
     for (let j = 0; j < results.length; j++) {
       if (results[j].status === 'rejected') {
-        console.warn(`[forks] enrich batch error for ${batch[j].full_name}:`, results[j].reason);
+        const repo = String(batch[j]?.full_name ?? 'unknown');
+        const reason = results[j].reason instanceof Error ? results[j].reason.message : 'UnknownError';
+        console.warn(`[forks] enrich batch error for ${repo}: ${reason}`);
       }
     }
   }
