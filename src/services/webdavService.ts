@@ -23,7 +23,12 @@ export class WebDAVService {
     body?: string,
     headers?: Record<string, string>,
   ): Promise<Response> {
-    return backend.proxyWebDAV(this.config.id, method, fullPath, body, headers);
+    // 传入内联凭据作为回退，避免新配置未同步时后端 404
+    return backend.proxyWebDAV(this.config.id, method, fullPath, body, headers, {
+      url: this.config.url,
+      username: this.config.username,
+      password: this.config.password,
+    });
   }
 
   // 压缩JSON数据，减少传输大小

@@ -586,13 +586,16 @@ class BackendAdapter {
 
   // === WebDAV Proxy ===
 
-  async proxyWebDAV(configId: string, method: string, path: string, body?: string, headers?: Record<string, string>): Promise<Response> {
+  async proxyWebDAV(configId: string, method: string, path: string, body?: string, headers?: Record<string, string>, inlineConfig?: { url: string; username: string; password: string }): Promise<Response> {
     if (!this._backendUrl) throw new Error('Backend not available');
 
     return this.fetchWithTimeout(`${this._backendUrl}/proxy/webdav`, {
       method: 'POST',
       headers: this.getAuthHeaders(),
-      body: JSON.stringify({ configId, method, path, body, headers })
+      body: JSON.stringify({
+        configId, method, path, body, headers,
+        ...(inlineConfig ? { inlineUrl: inlineConfig.url, inlineUsername: inlineConfig.username, inlinePassword: inlineConfig.password } : {}),
+      })
     });
   }
 
@@ -961,6 +964,18 @@ class BackendAdapter {
       backupTime?: string;
       retainedCount?: number;
     }>;
+  }
+
+  async decryptBackup(content: string): Promise<Record<string, unknown>> {
+    if (!this._backendUrl) throw new Error('Backend not available');
+
+    const res = await this.fetchWithTimeout(`${this._backendUrl}/backup/decrypt`, {
+      method: 'POST',
+      headers: this.getAuthHeaders(),
+      body: JSON.stringify({ content }),
+    });
+    if (!res.ok) await this.throwTranslatedError(res, 'Decrypt backup error');
+    return res.json() as Promise<Record<string, unknown>>;
   }
 
   // Auto-sync settings

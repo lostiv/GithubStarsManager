@@ -225,7 +225,23 @@ export const BackupPanel: React.FC<BackupPanelProps> = ({ t }) => {
         return;
       }
 
-      const backupData = JSON.parse(backupContent);
+      let backupData: Record<string, unknown>;
+      // 检测是否为 v2 加密格式，需要后端解密
+      let isEncrypted = false;
+      try {
+        const raw = JSON.parse(backupContent);
+        if (raw.v === 2 && typeof raw.data === 'string') isEncrypted = true;
+      } catch { /* JSON 解析失败，不是加密格式 */ }
+      if (isEncrypted) {
+        if (!backend.isAvailable) {
+          toast(t('加密备份需要后端解密，当前后端不可用。', 'Encrypted backup requires backend. Backend not available.'), 'error');
+          setIsRestoring(false);
+          return;
+        }
+        backupData = await backend.decryptBackup(backupContent);
+      } else {
+        backupData = JSON.parse(backupContent);
+      }
 
       // 兼容后端备份格式（snake_case → camelCase）
       if (!backupData.aiConfigs && Array.isArray(backupData.ai_configs)) {
