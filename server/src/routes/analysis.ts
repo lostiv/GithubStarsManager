@@ -27,16 +27,16 @@ router.post('/api/analysis/batch', (req, res) => {
       return;
     }
 
-    // Verify config exists
+    // 验证配置存在且处于激活状态
     const db = getDb();
-    const aiConfig = db.prepare('SELECT id FROM ai_configs WHERE id = ?').get(configId);
+    const aiConfig = db.prepare('SELECT id FROM ai_configs WHERE id = ? AND is_active = 1').get(configId);
     if (!aiConfig) {
-      res.status(404).json({ error: 'AI config not found', code: 'AI_CONFIG_NOT_FOUND' });
+      res.status(404).json({ error: 'AI config not found or not active', code: 'AI_CONFIG_NOT_FOUND' });
       return;
     }
 
     const lang = typeof language === 'string' && language === 'en' ? 'en' : 'zh';
-    const cats = Array.isArray(categoryNames) ? categoryNames.filter((c) => typeof c === 'string') : [];
+    const cats = Array.isArray(categoryNames) ? categoryNames.filter((c) => typeof c === 'string' && c.trim().length > 0) : [];
 
     const batch = analysisService.createBatch(
       repositoryIds as number[],

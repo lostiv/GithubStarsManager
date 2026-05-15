@@ -52,14 +52,17 @@ router.get('/api/repositories', (req, res) => {
     const db = getDb();
     const page = Math.max(1, parseInt(req.query.page as string) || 1);
     const limit = Math.min(10000, Math.max(1, parseInt(req.query.limit as string) || 100));
-    const search = req.query.search as string | undefined;
+    // 归一化 search 参数：Express 的 query parser 在 ?search=a&search=b 时会将其解析为数组
+    const rawSearch = req.query.search;
+    const search = Array.isArray(rawSearch) ? rawSearch[0] : typeof rawSearch === 'string' ? rawSearch : undefined;
     const offset = (page - 1) * limit;
 
     let sql = 'SELECT * FROM repositories';
     const params: unknown[] = [];
+    let escaped = '';
 
     if (search) {
-      const escaped = search.replace(/[%_\\]/g, '\\$&');
+      escaped = search.replace(/[%_\\]/g, '\\$&');
       sql += " WHERE name LIKE ? ESCAPE '\\' OR full_name LIKE ? ESCAPE '\\' OR description LIKE ? ESCAPE '\\' OR ai_summary LIKE ? ESCAPE '\\' OR ai_tags LIKE ? ESCAPE '\\'";
       const searchPattern = `%${escaped}%`;
       params.push(searchPattern, searchPattern, searchPattern, searchPattern, searchPattern);
@@ -72,9 +75,9 @@ router.get('/api/repositories', (req, res) => {
     const repositories = rows.map(transformRepo);
 
     const countSql = search
-      ? 'SELECT COUNT(*) as total FROM repositories WHERE name LIKE ? OR full_name LIKE ? OR description LIKE ? OR ai_summary LIKE ? OR ai_tags LIKE ?'
+      ? "SELECT COUNT(*) as total FROM repositories WHERE name LIKE ? ESCAPE '\\' OR full_name LIKE ? ESCAPE '\\' OR description LIKE ? ESCAPE '\\' OR ai_summary LIKE ? ESCAPE '\\' OR ai_tags LIKE ? ESCAPE '\\'"
       : 'SELECT COUNT(*) as total FROM repositories';
-    const countParams = search ? Array(5).fill(`%${search}%`) : [];
+    const countParams = search ? Array(5).fill(`%${escaped}%`) : [];
     const countRow = db.prepare(countSql).get(...countParams) as { total: number };
 
     res.json({ repositories, total: countRow.total, page, limit });

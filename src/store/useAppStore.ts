@@ -355,6 +355,17 @@ const normalizePersistedState = (
       sortBy: safePersisted.searchFilters?.sortBy || 'stars',
       sortOrder: safePersisted.searchFilters?.sortOrder || 'desc',
     },
+    aiConfigs: (() => {
+      if (!Array.isArray(safePersisted.aiConfigs)) return [];
+      return safePersisted.aiConfigs.map(c => ({ ...c, isActive: c.id === safePersisted.activeAIConfig }));
+    })(),
+    // 如果 activeAIConfig 指向的配置已不存在，清除该引用
+    activeAIConfig: (() => {
+      const configs = safePersisted.aiConfigs;
+      const id = safePersisted.activeAIConfig;
+      if (!id || !Array.isArray(configs)) return null;
+      return configs.some(c => c.id === id) ? id : null;
+    })(),
     webdavConfigs: (() => {
       if (!Array.isArray(safePersisted.webdavConfigs)) return [];
       return safePersisted.webdavConfigs.map(c => ({ ...c, isActive: c.id === safePersisted.activeWebDAVConfig }));
@@ -898,7 +909,10 @@ export const useAppStore = create<AppState & AppActions>()(
         aiConfigs: state.aiConfigs.filter(config => config.id !== id),
         activeAIConfig: state.activeAIConfig === id ? null : state.activeAIConfig
       })),
-      setActiveAIConfig: (activeAIConfig) => set({ activeAIConfig }),
+      setActiveAIConfig: (activeAIConfig) => set((state) => ({
+        aiConfigs: state.aiConfigs.map(c => ({ ...c, isActive: c.id === activeAIConfig })),
+        activeAIConfig
+      })),
       setAIConfigs: (aiConfigs) => set({ aiConfigs }),
 
       // WebDAV actions

@@ -3,6 +3,7 @@ import { Bot, Plus, Edit3, Trash2, Save, X, TestTube, RefreshCw, MessageSquare, 
 import { AIConfig, AIApiType, AIReasoningEffort } from '../../types';
 import { useAppStore } from '../../store/useAppStore';
 import { AIService } from '../../services/aiService';
+import { backend } from '../../services/backendAdapter';
 import { buildFinalApiUrl } from '../../utils/apiUrlBuilder';
 import { SliderInput } from '../ui/SliderInput';
 import { useDialog } from '../../hooks/useDialog';
@@ -157,6 +158,9 @@ export const AIConfigPanel: React.FC<AIConfigPanelProps> = ({ t }) => {
       };
       addAIConfig(config);
     }
+
+    // 保存后立即同步到后端，避免后续测试时后端查不到配置
+    backend.syncAIConfigs(useAppStore.getState().aiConfigs).catch(() => { /* 静默失败，测试时有直接 fetch 兜底 */ });
 
     resetForm();
   };

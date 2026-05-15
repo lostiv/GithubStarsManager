@@ -3,6 +3,7 @@ import { Cloud, Plus, Edit3, Trash2, Save, X, TestTube, RefreshCw } from 'lucide
 import { WebDAVConfig } from '../../types';
 import { useAppStore } from '../../store/useAppStore';
 import { WebDAVService } from '../../services/webdavService';
+import { backend } from '../../services/backendAdapter';
 import { useDialog } from '../../hooks/useDialog';
 
 interface WebDAVPanelProps {
@@ -78,6 +79,9 @@ export const WebDAVPanel: React.FC<WebDAVPanelProps> = ({ t }) => {
     } else {
       addWebDAVConfig(config);
     }
+
+    // 保存后立即同步到后端，避免后续使用时后端查不到配置
+    backend.syncWebDAVConfigs(useAppStore.getState().webdavConfigs).catch(() => { /* 静默失败 */ });
 
     resetForm();
   };
