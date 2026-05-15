@@ -53,11 +53,53 @@ function maskApiKey(key: string | null | undefined): string {
   return '***' + key.slice(-4);
 }
 
+function parseJsonField(value: unknown): unknown {
+  if (typeof value !== 'string' || !value) return value;
+  try {
+    const parsed = JSON.parse(value);
+    return (Array.isArray(parsed) || (typeof parsed === 'object' && parsed !== null)) ? parsed : value;
+  } catch { return value; }
+}
+
 export function exportAllData(db: Database.Database, mask = true): Record<string, unknown> {
-  const repositories = db.prepare('SELECT * FROM repositories').all() as Record<string, unknown>[];
-  const releases = db.prepare('SELECT * FROM releases').all() as Record<string, unknown>[];
-  const categories = db.prepare('SELECT * FROM categories').all() as Record<string, unknown>[];
-  const assetFilters = db.prepare('SELECT * FROM asset_filters').all() as Record<string, unknown>[];
+  const repositories = (db.prepare('SELECT * FROM repositories').all() as Record<string, unknown>[]).map((row) => ({
+    ...row,
+    topics: parseJsonField(row.topics),
+    ai_tags: parseJsonField(row.ai_tags),
+    ai_platforms: parseJsonField(row.ai_platforms),
+    custom_tags: parseJsonField(row.custom_tags),
+    forks: parseJsonField(row.forks),
+  }));
+  const releases = (db.prepare('SELECT * FROM releases').all() as Record<string, unknown>[]).map((row) => {
+    const assets = parseJsonField(row.assets);
+    return {
+      ...row,
+      prerelease: !!row.prerelease,
+      draft: !!row.draft,
+      is_read: !!row.is_read,
+      assets: Array.isArray(assets) ? assets : [],
+      zipball_url: row.zipball_url ?? undefined,
+      tarball_url: row.tarball_url ?? undefined,
+      repository: { id: row.repo_id, full_name: row.repo_full_name, name: row.repo_name },
+    };
+  });
+  const categories = (db.prepare('SELECT * FROM categories').all() as Record<string, unknown>[]).map((row) => ({
+    ...row,
+    keywords: parseJsonField(row.keywords),
+  }));
+  const assetFilters = (db.prepare('SELECT * FROM asset_filters').all() as Record<string, unknown>[]).map((row) => ({
+    ...row,
+    keywords: parseJsonField(row.keywords),
+  }));
+
+  const forkRows = db.prepare('SELECT * FROM forks').all() as Record<string, unknown>[];
+  const forks = forkRows.map((row) => ({
+    ...row,
+    fork: true,
+    owner: parseJsonField(row.owner),
+    source: parseJsonField(row.source),
+    parent: parseJsonField(row.parent),
+  }));
 
   const aiConfigRows = db.prepare('SELECT * FROM ai_configs').all() as Record<string, unknown>[];
   const aiConfigs = aiConfigRows.map((row) => {
@@ -111,6 +153,7 @@ export function exportAllData(db: Database.Database, mask = true): Record<string
     releases,
     categories,
     asset_filters: assetFilters,
+    forks,
     ai_configs: aiConfigs,
     webdav_configs: webdavConfigs,
     settings,

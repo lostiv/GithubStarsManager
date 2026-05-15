@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Download, Upload, RefreshCw, Cloud, AlertCircle, Clock, CheckCircle2, RotateCw } from 'lucide-react';
-import { AIConfig, WebDAVConfig } from '../../types';
+import { AIConfig, WebDAVConfig, Repository, Release, ForkRepo } from '../../types';
 import { useAppStore } from '../../store/useAppStore';
 import { WebDAVService } from '../../services/webdavService';
 import { backend } from '../../services/backendAdapter';
@@ -23,6 +23,8 @@ export const BackupPanel: React.FC<BackupPanelProps> = ({ t }) => {
     setLastBackup,
     setRepositories,
     setReleases,
+    forks,
+    setForks,
     addCustomCategory,
     deleteCustomCategory,
     hideDefaultCategory,
@@ -144,6 +146,7 @@ export const BackupPanel: React.FC<BackupPanelProps> = ({ t }) => {
       const backupData = {
         repositories,
         releases,
+        forks,
         customCategories,
         hiddenDefaultCategoryIds,
         aiConfigs: aiConfigs.map(config => ({ ...config, apiKey: config.apiKey ? '***' : '' })),
@@ -274,10 +277,67 @@ export const BackupPanel: React.FC<BackupPanelProps> = ({ t }) => {
       }
 
       if (Array.isArray(backupData.repositories)) {
-        setRepositories(backupData.repositories);
+        // 兼容旧备份格式：将 JSON 字符串字段解析为数组
+        const normalizedRepos = (backupData.repositories as Record<string, unknown>[]).map((repo) => {
+          const parseField = (value: unknown): unknown => {
+            if (typeof value !== 'string' || !value) return value;
+            try {
+              const parsed = JSON.parse(value);
+              return Array.isArray(parsed) ? parsed : value;
+            } catch { return value; }
+          };
+          return {
+            ...repo,
+            topics: parseField(repo.topics),
+            ai_tags: parseField(repo.ai_tags),
+            ai_platforms: parseField(repo.ai_platforms),
+            custom_tags: parseField(repo.custom_tags),
+            forks: parseField(repo.forks),
+          };
+        });
+        setRepositories(normalizedRepos as Repository[]);
       }
       if (Array.isArray(backupData.releases)) {
-        setReleases(backupData.releases);
+        const normalizedReleases = (backupData.releases as Record<string, unknown>[]).map((rel) => {
+          // 兼容旧备份：assets JSON 字符串 → 数组
+          if (typeof rel.assets === 'string' && rel.assets) {
+            try {
+              const parsed = JSON.parse(rel.assets);
+              if (Array.isArray(parsed)) {
+                rel = { ...rel, assets: parsed };
+              }
+            } catch { /* keep original */ }
+          }
+          // 兼容旧备份：扁平 repo_id/repo_full_name/repo_name → 嵌套 repository 对象
+          if (!rel.repository && (rel.repo_id || rel.repo_full_name)) {
+            rel = {
+              ...rel,
+              repository: { id: rel.repo_id, full_name: rel.repo_full_name, name: rel.repo_name },
+            };
+          }
+          return rel;
+        });
+        setReleases(normalizedReleases as Release[]);
+      }
+      if (Array.isArray(backupData.forks)) {
+        const normalizedForks = (backupData.forks as Record<string, unknown>[]).map((f) => {
+          // 兼容旧备份：owner/source/parent 可能是 JSON 字符串
+          const parseField = (value: unknown): unknown => {
+            if (typeof value !== 'string' || !value) return value;
+            try { return JSON.parse(value); } catch { return value; }
+          };
+          return {
+            ...f,
+            fork: true,
+            owner: parseField(f.owner),
+            source: parseField(f.source),
+            parent: parseField(f.parent),
+          };
+        });
+        setForks(normalizedForks as ForkRepo[]);
+      } else {
+        // 旧备份无 forks 字段时，按覆盖恢复语义清空
+        setForks([]);
       }
 
       // 分类
