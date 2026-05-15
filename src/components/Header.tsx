@@ -29,7 +29,22 @@ export const Header: React.FC = () => {
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isTextWrapped, setIsTextWrapped] = useState(false);
+  const [autoSyncLastTime, setAutoSyncLastTime] = useState<string | null>(null);
   const navRef = useRef<HTMLDivElement>(null);
+
+  // 定期查询后端自动同步状态，获取自动同步的最后执行时间
+  useEffect(() => {
+    const fetchStatus = async () => {
+      if (!backend.isAvailable) return;
+      try {
+        const status = await backend.fetchAutoSyncStatus();
+        setAutoSyncLastTime(status.lastSyncTime);
+      } catch { /* silent */ }
+    };
+    fetchStatus();
+    const timer = setInterval(fetchStatus, 60000);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     const checkIfTextWrapped = () => {
@@ -194,11 +209,19 @@ export const Header: React.FC = () => {
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
     const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-     
+
     if (diffHours < 1) return 'Just now';
     if (diffHours < 24) return `${diffHours}h ago`;
     return date.toLocaleDateString();
   };
+
+  // 取手动同步和自动同步中最新的时间用于显示
+  const displayLastSync = (() => {
+    const manual = lastSync ? new Date(lastSync).getTime() : 0;
+    const auto = autoSyncLastTime ? new Date(autoSyncLastTime).getTime() : 0;
+    const latest = Math.max(manual, auto);
+    return latest > 0 ? new Date(latest).toISOString() : null;
+  })();
 
   const t = (zh: string, en: string) => language === 'zh' ? zh : en;
 
@@ -465,7 +488,7 @@ export const Header: React.FC = () => {
           <div className="flex items-center gap-2 sm:gap-3 hd-btns lg:hd-btns">
             {/* Sync Status */}
             <div className="hidden sm:flex items-center space-x-2 text-sm text-gray-500 dark:text-text-tertiary">
-              <span>{t('上次同步:', 'Last sync:')} {formatLastSync(lastSync)}</span>
+              <span>{t('上次同步:', 'Last sync:')} {formatLastSync(displayLastSync)}</span>
               <button
                 onClick={handleSync}
                 disabled={isLoading}

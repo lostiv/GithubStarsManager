@@ -103,6 +103,7 @@ export interface ForkRepo {
     full_name: string;
     name: string;
     html_url: string;
+    pushed_at?: string;
   };
   has_unread?: boolean;
   upstream_updated_at?: string; // last time we checked/fetched upstream updates

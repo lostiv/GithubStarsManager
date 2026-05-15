@@ -76,7 +76,7 @@ router.post('/api/forks/:id/mark-read', (req, res) => {
     }
 
     // Fetch current source_pushed_at to set as the "read up to" point
-    const fork = db.prepare('SELECT source FROM forks WHERE id = ?').get(id) as { source: string } | undefined;
+    const fork = db.prepare('SELECT source, parent FROM forks WHERE id = ?').get(id) as { source: string; parent: string } | undefined;
     if (!fork) {
       res.status(404).json({ error: 'Fork not found', code: 'FORK_NOT_FOUND' });
       return;
@@ -84,7 +84,8 @@ router.post('/api/forks/:id/mark-read', (req, res) => {
 
     try {
       const source = JSON.parse(fork.source || '{}');
-      const sourcePushedAt = source?.pushed_at;
+      const parent = JSON.parse(fork.parent || '{}');
+      const sourcePushedAt = source?.pushed_at || parent?.pushed_at;
       if (sourcePushedAt) {
         db.prepare('UPDATE forks SET is_read = 1, upstream_pushed_at = ? WHERE id = ?').run(sourcePushedAt, id);
       } else {
@@ -106,7 +107,7 @@ router.post('/api/forks/mark-all-read', (_req, res) => {
     const db = getDb();
 
     // For each fork, update upstream_pushed_at to the latest source.pushed_at
-    const rows = db.prepare('SELECT id, source FROM forks WHERE is_read = 0').all() as Array<{ id: number; source: string }>;
+    const rows = db.prepare('SELECT id, source, parent FROM forks WHERE is_read = 0').all() as Array<{ id: number; source: string; parent: string }>;
     const updateStmt = db.prepare('UPDATE forks SET is_read = 1, upstream_pushed_at = ? WHERE id = ?');
     const markReadOnlyStmt = db.prepare('UPDATE forks SET is_read = 1 WHERE id = ?');
 
@@ -114,7 +115,8 @@ router.post('/api/forks/mark-all-read', (_req, res) => {
       for (const row of rows) {
         try {
           const source = JSON.parse(row.source || '{}');
-          const sourcePushedAt = source?.pushed_at;
+          const parent = JSON.parse(row.parent || '{}');
+          const sourcePushedAt = source?.pushed_at || parent?.pushed_at;
           if (sourcePushedAt) {
             updateStmt.run(sourcePushedAt, row.id);
           } else {

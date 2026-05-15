@@ -88,8 +88,10 @@ export const ForkTimeline: React.FC = () => {
 
     // Sort by source.pushed_at desc (upstream latest code push first)
     filtered.sort((a, b) => {
-      const aTime = a.source?.pushed_at ? new Date(a.source.pushed_at).getTime() : 0;
-      const bTime = b.source?.pushed_at ? new Date(b.source.pushed_at).getTime() : 0;
+      const aPushedAt = a.source?.pushed_at || a.parent?.pushed_at;
+      const bPushedAt = b.source?.pushed_at || b.parent?.pushed_at;
+      const aTime = aPushedAt ? new Date(aPushedAt).getTime() : 0;
+      const bTime = bPushedAt ? new Date(bPushedAt).getTime() : 0;
       return bTime - aTime;
     });
 

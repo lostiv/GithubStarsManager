@@ -68,7 +68,8 @@ export async function refreshForksFromGitHub(): Promise<{ forks: Record<string, 
       const id = raw.id as number;
       const full_name = raw.full_name as string;
       const source = raw.source as Record<string, unknown> | undefined;
-      const sourcePushedAt = source?.pushed_at as string | undefined;
+      const parent = raw.parent as Record<string, unknown> | undefined;
+      const sourcePushedAt = (source?.pushed_at || parent?.pushed_at) as string | undefined;
       const existing = existingMap.get(id);
 
       let isRead = 1;

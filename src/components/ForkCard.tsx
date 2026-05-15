@@ -104,7 +104,7 @@ const ForkCard: React.FC<ForkCardProps> = memo(({
                 <GitFork className="w-3.5 h-3.5" />
                 <span>
                   {(() => {
-                    const pushedAt = fork.source?.pushed_at;
+                    const pushedAt = fork.source?.pushed_at || fork.parent?.pushed_at;
                     if (pushedAt) {
                       const date = new Date(pushedAt);
                       if (!isNaN(date.getTime())) {
