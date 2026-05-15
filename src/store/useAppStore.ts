@@ -770,6 +770,14 @@ export const useAppStore = create<AppState & AppActions>()(
       setGitHubToken: (token) => {
         console.log('Setting GitHub token:', !!token);
         set({ githubToken: token });
+        // 异步同步到后端，确保 DB 中的加密 token 是最新的
+        if (token) {
+          import('../services/backendAdapter').then(({ backend }) => {
+            if (backend.isAvailable) {
+              backend.syncSettings({ github_token: token }).catch(() => {});
+            }
+          }).catch(() => {});
+        }
       },
       logout: () => set({
         user: null,

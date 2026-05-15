@@ -94,7 +94,11 @@ export const BackendPanel: React.FC<BackendPanelProps> = ({ t }) => {
       await backend.syncReleases(releases);
       await backend.syncAIConfigs(aiConfigs);
       await backend.syncWebDAVConfigs(webdavConfigs);
-      await backend.syncSettings({ hiddenDefaultCategoryIds });
+      const token = useAppStore.getState().githubToken;
+      await backend.syncSettings({
+        hiddenDefaultCategoryIds,
+        ...(token ? { github_token: token } : {}),
+      });
       toast(t(
         `已同步到后端：仓库 ${repositories.length}，发布 ${releases.length}，AI配置 ${aiConfigs.length}，WebDAV配置 ${webdavConfigs.length}`,
         `Synced to backend: repos ${repositories.length}, releases ${releases.length}, AI configs ${aiConfigs.length}, WebDAV configs ${webdavConfigs.length}`
