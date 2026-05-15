@@ -365,4 +365,15 @@
     </changelog>
     <downloadUrl>https://github.com/AmintaCCCP/GithubStarsManager/releases/download/v0.6.3/github-stars-manager-0.6.3.dmg</downloadUrl>
   </version>
+  <version>
+    <number>0.7.1</number>
+    <releaseDate>2026-05-15</releaseDate>
+    <changelog>
+      <item>修复 Fork 上游时间全部显示为 - 的问题</item>
+      <item>GitHub Token 登录后自动同步到后端，登出时同步清除</item>
+      <item>WebDAV 测试连接后端 404 时回退浏览器直连</item>
+      <item>Token 清空路径覆盖所有同步触发点</item>
+    </changelog>
+    <downloadUrl>https://github.com/AmintaCCCP/GithubStarsManager/releases/download/v0.7.1/github-stars-manager-0.7.1.dmg</downloadUrl>
+  </version>
 </versions>
