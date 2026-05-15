@@ -83,6 +83,25 @@ export class AIService {
     return this.config.model.trim().toLowerCase().includes('mimo');
   }
 
+  // 优先走后端代理；若后端尚未同步该配置（AI_CONFIG_NOT_FOUND），回退到直接 fetch
+  private async proxyOrDirectFetch(
+    requestBody: object,
+    doDirectFetch: () => Promise<Response>,
+  ): Promise<Record<string, unknown>> {
+    if (backend.isAvailable && this.config.id) {
+      try {
+        return await backend.proxyAIRequest(this.config.id, requestBody) as Record<string, unknown>;
+      } catch (err) {
+        console.warn('Backend proxy failed, falling back to direct fetch:', err);
+      }
+    }
+    const response = await doDirectFetch();
+    if (!response.ok) {
+      throw new Error(`AI API error: ${response.status} ${response.statusText}`);
+    }
+    return response.json();
+  }
+
   private async requestText(options: {
     system: string;
     user: string;
@@ -121,12 +140,9 @@ export class AIService {
             ...(isMiMoModel ? { thinking: { type: 'disabled' } } : {}),
           };
 
-      let data: Record<string, unknown>;
-      if (backend.isAvailable && this.config.id) {
-        data = await backend.proxyAIRequest(this.config.id, requestBody) as Record<string, unknown>;
-      } else {
+      const data = await this.proxyOrDirectFetch(requestBody, () => {
         const url = buildFinalApiUrl(this.config.baseUrl, apiType);
-        const response = await fetch(url, {
+        return fetch(url, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -136,11 +152,7 @@ export class AIService {
           body: JSON.stringify(requestBody),
           signal: options.signal,
         });
-        if (!response.ok) {
-          throw new Error(`AI API error: ${response.status} ${response.statusText}`);
-        }
-        data = await response.json();
-      }
+      });
 
       if (apiType === 'openai-responses') {
         const typedData = data as OpenAIResponse;
@@ -178,12 +190,9 @@ export class AIService {
         max_tokens: options.maxTokens,
       };
 
-      let data: unknown;
-      if (backend.isAvailable && this.config.id) {
-        data = await backend.proxyAIRequest(this.config.id, requestBody);
-      } else {
+      const data = await this.proxyOrDirectFetch(requestBody, () => {
         const url = buildApiUrl(this.config.baseUrl, 'v1/messages');
-        const response = await fetch(url, {
+        return fetch(url, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -194,13 +203,9 @@ export class AIService {
           body: JSON.stringify(requestBody),
           signal: options.signal,
         });
-        if (!response.ok) {
-          throw new Error(`AI API error: ${response.status} ${response.statusText}`);
-        }
-        data = await response.json();
-      }
+      });
 
-      const contentBlocks = (data as { content?: unknown }).content;
+      const contentBlocks = (data as unknown as { content?: unknown }).content;
       if (Array.isArray(contentBlocks)) {
         const text = contentBlocks
           .map((b) => {
@@ -233,14 +238,11 @@ ${options.user}` : options.user;
       },
     };
 
-    let data: unknown;
-    if (backend.isAvailable && this.config.id) {
-      data = await backend.proxyAIRequest(this.config.id, requestBody);
-    } else {
+    const data = await this.proxyOrDirectFetch(requestBody, () => {
       const path = `v1beta/models/${encodeURIComponent(model)}:generateContent`;
       const urlObj = new URL(buildApiUrl(this.config.baseUrl, path));
       urlObj.searchParams.set('key', this.config.apiKey);
-      const response = await fetch(urlObj.toString(), {
+      return fetch(urlObj.toString(), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -249,11 +251,7 @@ ${options.user}` : options.user;
         body: JSON.stringify(requestBody),
         signal: options.signal,
       });
-      if (!response.ok) {
-        throw new Error(`AI API error: ${response.status} ${response.statusText}`);
-      }
-      data = await response.json();
-    }
+    });
 
     const candidates = (data as { candidates?: unknown }).candidates;
     if (Array.isArray(candidates) && candidates.length > 0) {

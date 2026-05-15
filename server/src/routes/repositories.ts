@@ -57,9 +57,10 @@ router.get('/api/repositories', (req, res) => {
 
     let sql = 'SELECT * FROM repositories';
     const params: unknown[] = [];
+    let escaped = '';
 
     if (search) {
-      const escaped = search.replace(/[%_\\]/g, '\\$&');
+      escaped = search.replace(/[%_\\]/g, '\\$&');
       sql += " WHERE name LIKE ? ESCAPE '\\' OR full_name LIKE ? ESCAPE '\\' OR description LIKE ? ESCAPE '\\' OR ai_summary LIKE ? ESCAPE '\\' OR ai_tags LIKE ? ESCAPE '\\'";
       const searchPattern = `%${escaped}%`;
       params.push(searchPattern, searchPattern, searchPattern, searchPattern, searchPattern);
@@ -72,9 +73,9 @@ router.get('/api/repositories', (req, res) => {
     const repositories = rows.map(transformRepo);
 
     const countSql = search
-      ? 'SELECT COUNT(*) as total FROM repositories WHERE name LIKE ? OR full_name LIKE ? OR description LIKE ? OR ai_summary LIKE ? OR ai_tags LIKE ?'
+      ? "SELECT COUNT(*) as total FROM repositories WHERE name LIKE ? ESCAPE '\\' OR full_name LIKE ? ESCAPE '\\' OR description LIKE ? ESCAPE '\\' OR ai_summary LIKE ? ESCAPE '\\' OR ai_tags LIKE ? ESCAPE '\\'"
       : 'SELECT COUNT(*) as total FROM repositories';
-    const countParams = search ? Array(5).fill(`%${search}%`) : [];
+    const countParams = search ? Array(5).fill(`%${escaped}%`) : [];
     const countRow = db.prepare(countSql).get(...countParams) as { total: number };
 
     res.json({ repositories, total: countRow.total, page, limit });
