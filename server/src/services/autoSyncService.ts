@@ -305,6 +305,7 @@ export async function performAutoSync(): Promise<{ success: boolean; types: stri
   }
   isSyncing = true;
   const syncedTypes: string[] = [];
+  let hasError = false;
 
   try {
     const db = getDb();
@@ -321,24 +322,41 @@ export async function performAutoSync(): Promise<{ success: boolean; types: stri
     const token = getGitHubToken();
 
     if (enabledRepos?.value === 'true') {
-      await syncStarredRepos(token);
-      syncedTypes.push('repos');
+      try {
+        await syncStarredRepos(token);
+        syncedTypes.push('repos');
+      } catch (err) {
+        hasError = true;
+        console.error('[AutoSync] Repos sync failed:', err);
+      }
     }
 
     if (enabledForks?.value === 'true') {
-      await refreshForksFromGitHub();
-      syncedTypes.push('forks');
+      try {
+        await refreshForksFromGitHub();
+        syncedTypes.push('forks');
+      } catch (err) {
+        hasError = true;
+        console.error('[AutoSync] Forks sync failed:', err);
+      }
     }
 
     if (enabledReleases?.value === 'true') {
-      await syncReleases(token);
-      syncedTypes.push('releases');
+      try {
+        await syncReleases(token);
+        syncedTypes.push('releases');
+      } catch (err) {
+        hasError = true;
+        console.error('[AutoSync] Releases sync failed:', err);
+      }
     }
 
-    setLastSyncTime(Date.now());
-    console.log(`[AutoSync] Sync completed. Types: ${syncedTypes.join(', ')}`);
+    if (syncedTypes.length > 0) {
+      setLastSyncTime(Date.now());
+    }
+    console.log(`[AutoSync] Sync completed. Types: ${syncedTypes.join(', ') || 'none'}`);
 
-    return { success: true, types: syncedTypes };
+    return { success: !hasError, types: syncedTypes };
   } catch (err) {
     console.error('[AutoSync] Sync failed:', err);
     return { success: false, types: syncedTypes, error: err instanceof Error ? err.message : '未知错误' };

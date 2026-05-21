@@ -1,5 +1,6 @@
 import { backend } from './backendAdapter';
 import { useAppStore } from '../store/useAppStore';
+import { ForkRepo } from '../types';
 
 // Prevent concurrent syncs: when we're pulling data FROM backend, don't start another pull.
 let _isSyncingFromBackendActive = false;
@@ -20,6 +21,7 @@ const _lastHash = {
   ai: '',
   webdav: '',
   settings: '',
+  forks: '',
 };
 
 function quickHash(data: unknown): string {
@@ -44,15 +46,16 @@ export async function syncFromBackend(): Promise<void> {
   _isSyncingFromBackendActive = true;
 
   try {
-    const [reposResult, releasesResult, aiResult, webdavResult, settingsResult] = await Promise.allSettled([
+    const [reposResult, releasesResult, aiResult, webdavResult, settingsResult, forksResult] = await Promise.allSettled([
       backend.fetchRepositories(),
       backend.fetchReleases(),
       backend.fetchAIConfigs(),
       backend.fetchWebDAVConfigs(),
       backend.fetchSettings(),
+      backend.getForks(),
     ]);
 
-    const changed = { repos: false, releases: false, ai: false, webdav: false, settings: false };
+    const changed = { repos: false, releases: false, ai: false, webdav: false, settings: false, forks: false };
 
     // Compute hashes for each slice — only mark changed if hash differs
     const hashes: Record<string, string> = {};
@@ -93,6 +96,14 @@ export async function syncFromBackend(): Promise<void> {
       if (hash !== _lastHash.settings) {
         hashes.settings = hash;
         changed.settings = true;
+      }
+    }
+
+    if (forksResult.status === 'fulfilled') {
+      const hash = quickHash(forksResult.value);
+      if (hash !== _lastHash.forks) {
+        hashes.forks = hash;
+        changed.forks = true;
       }
     }
 
@@ -185,6 +196,17 @@ export async function syncFromBackend(): Promise<void> {
         useAppStore.setState({ collapsedSidebarCategoryCount: settings.collapsedSidebarCategoryCount });
       }
       _lastHash.settings = hashes.settings;
+    }
+
+    if (changed.forks && forksResult.status === 'fulfilled') {
+      const backendForks = forksResult.value as ForkRepo[];
+      const localForks = state.forks;
+      const isBootstrapEmpty =
+        backendForks.length === 0 && localForks.length > 0 && _lastHash.forks === '';
+      if (!isBootstrapEmpty) {
+        state.setForks(backendForks);
+        _lastHash.forks = hashes.forks;
+      }
     }
 
     console.log('✅ Synced from backend (data changed)');
