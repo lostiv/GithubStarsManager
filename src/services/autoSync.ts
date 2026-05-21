@@ -136,8 +136,8 @@ export async function syncFromBackend(): Promise<void> {
         );
       } else {
         state.setRepositories(backendRepos);
-        _lastHash.repos = hashes.repos;
       }
+      _lastHash.repos = hashes.repos;
     }
     if (changed.releases && releasesResult.status === 'fulfilled') {
       const backendReleases = releasesResult.value.releases;
@@ -205,8 +205,8 @@ export async function syncFromBackend(): Promise<void> {
         backendForks.length === 0 && localForks.length > 0 && _lastHash.forks === '';
       if (!isBootstrapEmpty) {
         state.setForks(backendForks);
-        _lastHash.forks = hashes.forks;
       }
+      _lastHash.forks = hashes.forks;
     }
 
     console.log('✅ Synced from backend (data changed)');
