@@ -38,5 +38,10 @@ server/dist/
 # Claude Code local (per-developer) settings
 .claude/settings.local.json
 
+# Local Codex/Claude auto-resume plugin files
+.codex-plugin/
+hooks/
+.claude/skills/
+
 # Landing page (separate static site)
 LandingPage/
