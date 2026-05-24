@@ -50,6 +50,33 @@ async function getGitHubProxyToken(): Promise<string | null> {
   return decrypt(tokenRow.value, config.encryptionKey);
 }
 
+function validateGitHubSearchQueryParams(input: unknown): { ok: true; value?: Record<string, string> } | { ok: false; message: string } {
+  if (input === undefined || input === null) {
+    return { ok: true };
+  }
+
+  if (typeof input !== 'object' || Array.isArray(input)) {
+    return { ok: false, message: 'query_params must be an object' };
+  }
+
+  const output: Record<string, string> = {};
+  for (const [key, value] of Object.entries(input as Record<string, unknown>)) {
+    const trimmedKey = key.trim();
+    if (!trimmedKey) {
+      return { ok: false, message: 'query_params contains an empty key' };
+    }
+    if (typeof value !== 'string') {
+      return { ok: false, message: `query_params["${trimmedKey}"] must be a string` };
+    }
+    if (trimmedKey.length > 100 || value.length > 2000) {
+      return { ok: false, message: `query_params["${trimmedKey}"] is too long` };
+    }
+    output[trimmedKey] = value;
+  }
+
+  return { ok: true, value: output };
+}
+
 async function proxyGitHubSearch(
   path: 'search/repositories' | 'search/users',
   queryParams: Record<string, string> | undefined,
@@ -84,8 +111,14 @@ async function proxyGitHubSearch(
 // Register specific search routes before the catch-all GitHub proxy route.
 router.post('/api/proxy/github/search/repositories', async (req, res) => {
   try {
-    const { query_params } = req.body as { query_params?: Record<string, string> };
-    await proxyGitHubSearch('search/repositories', query_params, res);
+    const body = req.body as { query_params?: unknown } | undefined;
+    const validation = validateGitHubSearchQueryParams(body?.query_params);
+    if (!validation.ok) {
+      res.status(400).json({ error: validation.message, code: 'INVALID_QUERY_PARAMS' });
+      return;
+    }
+
+    await proxyGitHubSearch('search/repositories', validation.value, res);
   } catch (err) {
     console.error('GitHub search repositories proxy error:', err);
     res.status(500).json({ error: 'GitHub search proxy failed', code: 'GITHUB_SEARCH_PROXY_FAILED' });
@@ -94,8 +127,14 @@ router.post('/api/proxy/github/search/repositories', async (req, res) => {
 
 router.post('/api/proxy/github/search/users', async (req, res) => {
   try {
-    const { query_params } = req.body as { query_params?: Record<string, string> };
-    await proxyGitHubSearch('search/users', query_params, res);
+    const body = req.body as { query_params?: unknown } | undefined;
+    const validation = validateGitHubSearchQueryParams(body?.query_params);
+    if (!validation.ok) {
+      res.status(400).json({ error: validation.message, code: 'INVALID_QUERY_PARAMS' });
+      return;
+    }
+
+    await proxyGitHubSearch('search/users', validation.value, res);
   } catch (err) {
     console.error('GitHub search users proxy error:', err);
     res.status(500).json({ error: 'GitHub search proxy failed', code: 'GITHUB_SEARCH_PROXY_FAILED' });
