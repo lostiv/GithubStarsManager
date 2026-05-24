@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import request from 'supertest';
 import { proxyRequest } from '../../src/services/proxyService.js';
+import { createApp } from '../../src/index.js';
+import { getDb, closeDb } from '../../src/db/connection.js';
+import { runMigrations } from '../../src/db/migrations.js';
+import { encrypt } from '../../src/services/crypto.js';
+import { config } from '../../src/config.js';
 
 // Store original fetch
 const originalFetch = globalThis.fetch;
@@ -279,5 +285,57 @@ describe('proxyRequest', () => {
     const [, calledOptions] = mockFetch.mock.calls[0];
     expect(calledOptions.method).toBe('PUT');
     expect(calledOptions.body).toBe('{"repos":[]}');
+  });
+});
+
+describe('GitHub search proxy routes', () => {
+  let mockFetch: ReturnType<typeof vi.fn>;
+
+  beforeEach(() => {
+    closeDb();
+    const db = getDb();
+    runMigrations(db);
+    db.prepare('DELETE FROM settings').run();
+    db.prepare('INSERT INTO settings (key, value) VALUES (?, ?)').run(
+      'github_token',
+      encrypt('ghp_test_token', config.encryptionKey),
+    );
+
+    mockFetch = vi.fn();
+    globalThis.fetch = mockFetch;
+  });
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+    closeDb();
+    vi.restoreAllMocks();
+  });
+
+  it('routes repository search through the specific GET proxy with query params', async () => {
+    const responseData = { items: [{ id: 1, full_name: 'lostiv/GithubStarsManager' }] };
+    mockFetch.mockResolvedValueOnce({
+      status: 200,
+      headers: new Headers({ 'content-type': 'application/json' }),
+      json: () => Promise.resolve(responseData),
+      text: () => Promise.resolve(JSON.stringify(responseData)),
+    });
+
+    const app = createApp();
+    const response = await request(app)
+      .post('/api/proxy/github/search/repositories')
+      .send({ query_params: { q: 'stars:>1000', sort: 'stars', per_page: '10' } });
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual(responseData);
+    expect(mockFetch).toHaveBeenCalledOnce();
+
+    const [calledUrl, calledOptions] = mockFetch.mock.calls[0];
+    const url = new URL(calledUrl);
+    expect(`${url.origin}${url.pathname}`).toBe('https://api.github.com/search/repositories');
+    expect(url.searchParams.get('q')).toBe('stars:>1000');
+    expect(url.searchParams.get('sort')).toBe('stars');
+    expect(url.searchParams.get('per_page')).toBe('10');
+    expect(calledOptions.method).toBe('GET');
+    expect(calledOptions.body).toBeUndefined();
   });
 });

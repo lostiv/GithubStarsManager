@@ -500,15 +500,15 @@ export class GitHubApiService {
         description = description.replace(/\s+/g, ' ').trim();
 
         // 解析 link 获取 owner/repo 格式
-        const match = link.match(/github\.com\/([^\/]+)\/([^\/\?#]+)/);
+        const match = link.match(/github\.com\/([^/]+)\/([^/?#]+)/);
         const owner = match?.[1] || '';
         const repoName = match?.[2] || title;
 
         // 从 description 中提取 stars 和 forks（格式如 "⭐ 1,234 | 🍴 456"）
         const starsMatch = description.match(/⭐\s*([\d,]+)/);
         const forksMatch = description.match(/🍴\s*([\d,]+)/);
-        let stars = starsMatch ? parseInt(starsMatch[1].replace(/,/g, '')) : 0;
-        let forks = forksMatch ? parseInt(forksMatch[1].replace(/,/g, '')) : 0;
+        const stars = starsMatch ? parseInt(starsMatch[1].replace(/,/g, '')) : 0;
+        const forks = forksMatch ? parseInt(forksMatch[1].replace(/,/g, '')) : 0;
 
         repos.push({
           id: i + 1,
@@ -586,6 +586,7 @@ export class GitHubApiService {
       try {
         userDetail = await this.makeRequest<GitHubUserDetail>(`/users/${searchUser.login}`);
       } catch {
+        // Keep the search result fallback when user details are unavailable.
       }
 
       let topRepo: SubscriptionRepo | null = null;
@@ -601,6 +602,7 @@ export class GitHubApiService {
           };
         }
       } catch {
+        // Keep the developer entry even when top repo lookup fails.
       }
       devs.push({
         rank: i + 1,
@@ -703,7 +705,7 @@ export class GitHubApiService {
         description = description.replace(/\s+/g, ' ').trim();
 
         // Parse link to get owner/repo
-        const match = link.match(/github\.com\/([^\/]+)\/([^\/\?#]+)/);
+        const match = link.match(/github\.com\/([^/]+)\/([^/?#]+)/);
         const owner = match?.[1] || '';
         const repoName = match?.[2] || title;
 

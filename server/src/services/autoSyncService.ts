@@ -253,15 +253,22 @@ async function syncReleases(token: string): Promise<number> {
       }
 
       if (releases.length > 0) {
+        const existingReleaseStmt = db.prepare('SELECT is_read, zipball_url, tarball_url FROM releases WHERE id = ?');
         const upsertStmt = db.prepare(`
           INSERT OR REPLACE INTO releases (
             id, tag_name, name, body, html_url, published_at, assets,
-            repo_id, repo_full_name, repo_name, prerelease, draft, is_read
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            repo_id, repo_full_name, repo_name, prerelease, draft, is_read,
+            zipball_url, tarball_url
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `);
 
         const bulkUpsert = db.transaction(() => {
           for (const rel of releases) {
+            const existing = existingReleaseStmt.get(rel.id) as {
+              is_read: number;
+              zipball_url: string | null;
+              tarball_url: string | null;
+            } | undefined;
             upsertStmt.run(
               rel.id ?? null,
               rel.tag_name ?? '',
@@ -275,7 +282,9 @@ async function syncReleases(token: string): Promise<number> {
               name,
               rel.prerelease ? 1 : 0,
               rel.draft ? 1 : 0,
-              0
+              existing?.is_read ?? 0,
+              rel.zipball_url ?? existing?.zipball_url ?? null,
+              rel.tarball_url ?? existing?.tarball_url ?? null
             );
           }
         });

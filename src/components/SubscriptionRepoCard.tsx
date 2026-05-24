@@ -5,7 +5,6 @@ import { useAppStore, getAllCategories } from '../store/useAppStore';
 import { analyzeRepository, createFailedAnalysisResult } from '../services/aiAnalysisHelper';
 import { backend } from '../services/backendAdapter';
 import { backendAnalysis } from '../services/backendAnalysisService';
-import { GitHubApiService } from '../services/githubApi';
 import { ReadmeModal } from './ReadmeModal';
 import { Modal } from './Modal';
 import { useDialog } from '../hooks/useDialog';

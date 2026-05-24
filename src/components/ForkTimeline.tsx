@@ -15,20 +15,13 @@ export const ForkTimeline: React.FC = () => {
     language,
     setForks,
     // Fork Timeline View State from global store
-    forkViewMode,
-    forkSelectedFilters,
     forkSearchQuery,
-    forkExpandedRepositories,
     forkIsRefreshing,
-    setForkViewMode,
-    toggleForkSelectedFilter,
-    clearForkSelectedFilters,
     setForkSearchQuery,
-    toggleForkExpandedRepository,
     setForkIsRefreshing,
   } = useAppStore();
 
-  const { toast, confirm } = useDialog();
+  const { toast } = useDialog();
 
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(20);
@@ -61,10 +54,7 @@ export const ForkTimeline: React.FC = () => {
   const [isFetchingBranches, setIsFetchingBranches] = useState(false);
 
   // Alias global state for local use
-  const viewMode = forkViewMode;
-  const selectedFilters = forkSelectedFilters;
   const searchQuery = forkSearchQuery;
-  const expandedRepositories = forkExpandedRepositories;
 
   const t = useCallback((zh: string, en: string) => language === 'zh' ? zh : en, [language]);
 
