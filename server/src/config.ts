@@ -37,13 +37,19 @@ function resolveEncryptionKey(dataDir: string): string {
 
 function loadConfig(): Config {
   const dataDir = resolveDataDir();
+  const nodeEnv = process.env.NODE_ENV || 'development';
+  const apiSecret = process.env.API_SECRET || null;
+
+  if (nodeEnv === 'production' && !apiSecret) {
+    throw new Error('API_SECRET is required when NODE_ENV=production');
+  }
 
   return {
     port: parseInt(process.env.PORT || '3000', 10),
-    apiSecret: process.env.API_SECRET || null,
+    apiSecret,
     encryptionKey: resolveEncryptionKey(dataDir),
     dbPath: process.env.DB_PATH || path.join(dataDir, 'data.db'),
-    nodeEnv: process.env.NODE_ENV || 'development',
+    nodeEnv,
   };
 }
 

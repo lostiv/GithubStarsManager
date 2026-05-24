@@ -18,7 +18,6 @@ export const Header: React.FC = () => {
     setTheme,
     setCurrentView,
     setRepositories,
-    setReleases,
     setLoading,
     setLastSync,
     logout,

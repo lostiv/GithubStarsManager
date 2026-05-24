@@ -32,7 +32,7 @@ const BACKEND_SECRET_SESSION_KEY = 'github-stars-manager-backend-secret';
 
 // Create a debounced storage to avoid frequent JSON.stringify calls on large state objects
 // which causes V8 JIT assertion failures (EXC_BREAKPOINT) on macOS ARM64.
-const debouncedPersistStorage: PersistStorage<any> = {
+const debouncedPersistStorage: PersistStorage<PersistedAppState> = {
   getItem: async (name) => {
     const str = await indexedDBStorage.getItem(name);
     if (!str) return null;
@@ -44,8 +44,8 @@ const debouncedPersistStorage: PersistStorage<any> = {
   },
   setItem: (() => {
     let timeoutId: ReturnType<typeof setTimeout> | null = null;
-    let latestValue: StorageValue<any> | null = null;
-    return (name: string, value: StorageValue<any>) => {
+    let latestValue: StorageValue<PersistedAppState> | null = null;
+    return (name: string, value: StorageValue<PersistedAppState>) => {
       latestValue = value;
       if (timeoutId) clearTimeout(timeoutId);
       timeoutId = setTimeout(() => {

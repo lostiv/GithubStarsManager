@@ -55,7 +55,7 @@ export const RepositoryEditModal: React.FC<RepositoryEditModalProps> = ({
   onClose,
   repository
 }) => {
-  const { updateRepository, language, customCategories, hiddenDefaultCategoryIds, defaultCategoryOverrides, theme } = useAppStore();
+  const { updateRepository, language, customCategories, hiddenDefaultCategoryIds, defaultCategoryOverrides } = useAppStore();
   const { toast } = useDialog();
 
   const [formData, setFormData] = useState({

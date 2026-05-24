@@ -130,8 +130,6 @@ async function runBatch(batchId: string): Promise<void> {
   const concurrency = Math.max(1, Math.min((aiConfig.concurrency as number) || 1, 10));
 
   const queue = [...batch.repositoryIds];
-  let activeWorkers = 0;
-
   const processNext = async (): Promise<void> => {
     while (true) {
       if (batch.cancelRequested) return;
@@ -139,15 +137,12 @@ async function runBatch(batchId: string): Promise<void> {
       const repoId = queue.shift();
       if (repoId === undefined) return;
 
-      activeWorkers++;
       try {
         await processRepository(batch, repoId, aiConfig);
         batch.completed++;
       } catch (err) {
         console.error(`[analysis] Failed to analyze repo ${repoId}:`, err);
         batch.failed++;
-      } finally {
-        activeWorkers--;
       }
     }
   };

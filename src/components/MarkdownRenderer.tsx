@@ -68,6 +68,8 @@ const CodeBlock: React.FC<{
     }
     return String(children).replace(/\n$/, '');
   }, [children]);
+  const codeLines = useMemo(() => codeText.split('\n'), [codeText]);
+  const showLineNumbers = codeLines.length > 3;
 
   useEffect(() => {
     if (codeRef.current) {
@@ -179,11 +181,23 @@ const CodeBlock: React.FC<{
               ? 'bg-gradient-to-br from-cyan-50/40 to-slate-100/20 dark:from-[#0d1117] dark:to-[#161b22]'
               : 'bg-light-bg dark:bg-[#0d1117]'
       }`}>
-        <pre className={`p-4 overflow-x-auto ${className || ''}`}>
-          <code ref={codeRef} className={`text-sm font-mono leading-6 text-gray-800 dark:text-[#e6edf3] ${normalizedLanguage ? `language-${normalizedLanguage}` : ''}`}>
-            {codeText}
-          </code>
-        </pre>
+        <div className="flex min-w-max">
+          {showLineNumbers && (
+            <div
+              className="select-none border-r border-black/[0.06] dark:border-white/[0.04] bg-black/[0.02] dark:bg-white/[0.02] px-3 py-4 text-right text-sm font-mono leading-6 text-gray-400 dark:text-text-quaternary"
+              aria-hidden="true"
+            >
+              {codeLines.map((_, index) => (
+                <div key={index}>{index + 1}</div>
+              ))}
+            </div>
+          )}
+          <pre className={`p-4 overflow-x-auto ${className || ''}`}>
+            <code ref={codeRef} className={`text-sm font-mono leading-6 text-gray-800 dark:text-[#e6edf3] ${normalizedLanguage ? `language-${normalizedLanguage}` : ''}`}>
+              {codeText}
+            </code>
+          </pre>
+        </div>
       </div>
     </div>
   );

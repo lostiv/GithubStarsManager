@@ -316,7 +316,7 @@ const RepositoryCardComponent: React.FC<RepositoryCardProps> = ({
           configId: activeConfig.id,
           language,
           categoryNames,
-          onComplete: (completed, failed) => {
+          onComplete: () => {
             const reanalysis = !!repository.analyzed_at;
             const message = reanalysis
               ? t('AI重新分析完成！', 'AI re-analysis completed!')

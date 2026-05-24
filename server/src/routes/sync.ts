@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { getDb } from '../db/connection.js';
-import { encrypt, decrypt } from '../services/crypto.js';
+import { encrypt } from '../services/crypto.js';
 import { config } from '../config.js';
 import { exportAllData } from '../services/backupService.js';
 
