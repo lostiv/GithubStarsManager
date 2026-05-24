@@ -366,4 +366,49 @@ describe('GitHub search proxy routes', () => {
     expect(calledOptions.method).toBe('GET');
     expect(calledOptions.body).toBeUndefined();
   });
+
+  it('returns 400 when query_params is an array', async () => {
+    const app = createApp();
+    const response = await request(app)
+      .post('/api/proxy/github/search/users')
+      .send({ query_params: ['invalid'] });
+
+    expect(response.status).toBe(400);
+    expect(response.body.code).toBe('INVALID_QUERY_PARAMS');
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it('returns 400 when query_params value is not a string', async () => {
+    const app = createApp();
+    const response = await request(app)
+      .post('/api/proxy/github/search/users')
+      .send({ query_params: { q: 123 } });
+
+    expect(response.status).toBe(400);
+    expect(response.body.code).toBe('INVALID_QUERY_PARAMS');
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it('returns 400 when query_params key exceeds length limit', async () => {
+    const app = createApp();
+    const longKey = 'a'.repeat(101);
+    const response = await request(app)
+      .post('/api/proxy/github/search/users')
+      .send({ query_params: { [longKey]: 'value' } });
+
+    expect(response.status).toBe(400);
+    expect(response.body.code).toBe('INVALID_QUERY_PARAMS');
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it('returns 400 when query_params contains an empty key', async () => {
+    const app = createApp();
+    const response = await request(app)
+      .post('/api/proxy/github/search/users')
+      .send({ query_params: { '': 'value' } });
+
+    expect(response.status).toBe(400);
+    expect(response.body.code).toBe('INVALID_QUERY_PARAMS');
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
 });

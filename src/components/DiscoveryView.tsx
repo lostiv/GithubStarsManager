@@ -648,7 +648,7 @@ export const DiscoveryView: React.FC = React.memo(() => {
       if (append) {
         setDiscoveryLoadMoreError(channelId, t('加载更多失败，请重试', 'Failed to load more, please retry'));
       } else {
-        toast(t('获取数据失败，请检查网络连接或GitHub Token。', 'Failed to fetch data. Please check your network connection or GitHub Token.'), 'error');
+        toast(t('获取数据失败，请检查网络连接或 GitHub Token。', 'Failed to fetch data. Please check your network connection or GitHub Token.'), 'error');
       }
     } finally {
       if (append) {
@@ -659,12 +659,14 @@ export const DiscoveryView: React.FC = React.memo(() => {
     }
   }, [githubToken, toast, t, setDiscoveryLoading, setDiscoveryLoadingMore, setDiscoveryLoadMoreError, setDiscoveryRepos, setDiscoveryLastRefresh, discoveryPlatform, discoveryLanguage, discoverySortBy, discoverySortOrder, discoverySearchQuery, discoverySelectedTopic, setDiscoveryHasMore, setDiscoveryNextPage, setDiscoveryTotalCount, appendDiscoveryRepos, trendingTimeRange]);
 
-  // 切换频道时恢复滚动位置，并自动加载空数据
+  // 切换频道时恢复滚动位置
   useEffect(() => {
     // 恢复当前频道的滚动位置（从 ref 读取最新值，避免订阅整个 map）
     const savedPosition = discoveryScrollPositionsRef.current[selectedDiscoveryChannel] || 0;
     window.scrollTo({ top: savedPosition, behavior: 'auto' });
-    
+  }, [selectedDiscoveryChannel]);
+
+  useEffect(() => {
     // 取消持久化后，首次打开或切换到空频道时自动加载
     const hasRepos = useAppStore.getState().discoveryRepos[selectedDiscoveryChannel]?.length > 0;
     const isLoading = useAppStore.getState().discoveryIsLoading[selectedDiscoveryChannel];
@@ -695,15 +697,15 @@ export const DiscoveryView: React.FC = React.memo(() => {
     const diffMs = now.getTime() - date.getTime();
     const diffMin = Math.floor(diffMs / (1000 * 60));
     if (diffMin < 1) return t('刚刚', 'Just now');
-    if (diffMin < 60) return t(`${diffMin}分钟前`, `${diffMin}m ago`);
+    if (diffMin < 60) return t(`${diffMin} 分钟前`, `${diffMin}m ago`);
     const diffHours = Math.floor(diffMin / 60);
-    if (diffHours < 24) return t(`${diffHours}小时前`, `${diffHours}h ago`);
+    if (diffHours < 24) return t(`${diffHours} 小时前`, `${diffHours}h ago`);
     return date.toLocaleDateString();
   }, [t]);
 
   // 处理滚动事件：保存滚动位置、控制工具栏显示、控制侧栏固定
   const handleScroll = useCallback(() => {
-    // 获取页面滚动位置（支持window滚动和元素滚动）
+    // 获取页面滚动位置（支持 window 滚动和元素滚动）
     const currentScrollY = window.scrollY || window.pageYOffset || 0;
 
     // 控制工具栏显示/隐藏
@@ -742,17 +744,17 @@ export const DiscoveryView: React.FC = React.memo(() => {
 
     const activeConfig = aiConfigs.find(c => c.id === activeAIConfig);
     if (!activeConfig) {
-      toast(t('请先在设置中配置AI服务。', 'Please configure AI service in settings first.'), 'error');
+      toast(t('请先在设置中配置 AI 服务。', 'Please configure AI service in settings first.'), 'error');
       return;
     }
 
     if (activeConfig.apiKeyStatus === 'decrypt_failed' || activeConfig.apiKeyStatus === 'empty') {
-      toast(t('AI服务的API密钥无法解密或为空，请在设置中重新输入并保存该配置。', 'The AI service API key could not be decrypted or is empty. Please re-enter and save the configuration in settings.'), 'error');
+      toast(t('AI 服务的 API 密钥无法解密或为空，请在设置中重新输入并保存该配置。', 'The AI service API key could not be decrypted or is empty. Please re-enter and save the configuration in settings.'), 'error');
       return;
     }
 
     if (!activeConfig.baseUrl || !activeConfig.apiKey || !activeConfig.model) {
-      toast(t('AI服务配置不完整，请检查API端点、密钥和模型名称。', 'AI service configuration is incomplete. Please check the API endpoint, key, and model name.'), 'error');
+      toast(t('AI 服务配置不完整，请检查 API 端点、密钥和模型名称。', 'AI service configuration is incomplete. Please check the API endpoint, key, and model name.'), 'error');
       return;
     }
 
@@ -768,7 +770,7 @@ export const DiscoveryView: React.FC = React.memo(() => {
     );
 
     if (unanalyzed.length === 0) {
-      toast(t('已加载的所有项目均已完成AI分析。', 'All loaded projects have been analyzed.'), 'info');
+      toast(t('已加载的所有项目均已完成 AI 分析。', 'All loaded projects have been analyzed.'), 'info');
       return;
     }
 
@@ -845,11 +847,11 @@ export const DiscoveryView: React.FC = React.memo(() => {
             toast(
               shouldStopRef.current
                 ? t(
-                  `AI分析已停止！成功 ${completed} 个${failed > 0 ? `，失败 ${failed} 个` : ''}`,
+                  `AI 分析已停止！成功 ${completed} 个${failed > 0 ? `，失败 ${failed} 个` : ''}`,
                   `AI analysis stopped! ${completed} succeeded${failed > 0 ? `, ${failed} failed` : ''}`
                 )
                 : t(
-                  `AI分析完成！成功 ${completed} 个${failed > 0 ? `，失败 ${failed} 个` : ''}`,
+                  `AI 分析完成！成功 ${completed} 个${failed > 0 ? `，失败 ${failed} 个` : ''}`,
                   `AI analysis complete! ${completed} succeeded${failed > 0 ? `, ${failed} failed` : ''}`
                 ),
               completed === 0 ? 'error' : failed > 0 ? 'info' : 'success'
@@ -858,7 +860,7 @@ export const DiscoveryView: React.FC = React.memo(() => {
         });
       } catch (err) {
         console.error('Backend AI analysis error:', err);
-        toast(t('AI分析启动失败，请检查后端连接和AI配置。', 'AI analysis failed to start. Please check backend connection and AI configuration.'), 'error');
+        toast(t('AI 分析启动失败，请检查后端连接和 AI 配置。', 'AI analysis failed to start. Please check backend connection and AI configuration.'), 'error');
       } finally {
         setIsAnalyzing(false);
         setAnalysisOptimizer(null);
@@ -955,14 +957,14 @@ export const DiscoveryView: React.FC = React.memo(() => {
       const failCount = results.filter(r => !r.success).length;
       toast(
         t(
-          `AI分析完成！成功 ${successCount} 个${failCount > 0 ? `，失败 ${failCount} 个` : ''}`,
+          `AI 分析完成！成功 ${successCount} 个${failCount > 0 ? `，失败 ${failCount} 个` : ''}`,
           `AI analysis complete! ${successCount} succeeded${failCount > 0 ? `, ${failCount} failed` : ''}`
         ),
         successCount === 0 ? 'error' : failCount > 0 ? 'info' : 'success'
       );
     } catch (err) {
       console.error('AI analysis error:', err);
-      toast(t('AI分析失败，请检查AI配置。', 'AI analysis failed. Please check your AI configuration.'), 'error');
+      toast(t('AI 分析失败，请检查 AI 配置。', 'AI analysis failed. Please check your AI configuration.'), 'error');
     } finally {
       setIsAnalyzing(false);
       setAnalysisOptimizer(null);
@@ -1201,10 +1203,10 @@ export const DiscoveryView: React.FC = React.memo(() => {
                       onClick={handleAnalyzePage}
                       disabled={isAnalyzing || currentIsLoading}
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-gray-100 dark:bg-white/[0.04] text-gray-700 dark:text-text-secondary hover:bg-gray-200 dark:hover:bg-white/[0.08] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      title={t('AI分析', 'Analyze with AI')}
+                      title={t('AI 分析', 'Analyze with AI')}
                     >
                       <Bot className="w-4 h-4" />
-                      <span className="hidden sm:inline">{t('AI分析', 'AI Analyze')}</span>
+                      <span className="hidden sm:inline">{t('AI 分析', 'AI Analyze')}</span>
                     </button>
                   )}
                   <DataStats
@@ -1278,8 +1280,8 @@ export const DiscoveryView: React.FC = React.memo(() => {
                     onChange={(value) => setDiscoverySortBy(value as SortBy)}
                     options={[
                       { value: 'BestMatch', label: t('最佳匹配', 'Best Match') },
-                      { value: 'MostStars', label: t('最多Star', 'Most Stars') },
-                      { value: 'MostForks', label: t('最多Fork', 'Most Forks') },
+                      { value: 'MostStars', label: t('最多 Star', 'Most Stars') },
+                      { value: 'MostForks', label: t('最多 Fork', 'Most Forks') },
                     ]}
                   />
 
@@ -1308,7 +1310,7 @@ export const DiscoveryView: React.FC = React.memo(() => {
                     {t('正在获取数据...', 'Fetching data...')}
                   </p>
                   <p className="text-xs text-gray-400 dark:text-text-tertiary">
-                    {t('GitHub API 响应中', 'Waiting for GitHub API response')}
+                    {t('等待 GitHub API 响应', 'Waiting for GitHub API response')}
                   </p>
                 </div>
               </div>

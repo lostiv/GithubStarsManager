@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
 import { Calendar, Download, ExternalLink, Package, RefreshCw } from 'lucide-react';
 import { useDialog } from '../hooks/useDialog';
@@ -16,6 +16,7 @@ export const UpdateChecker: React.FC<UpdateCheckerProps> = ({ onUpdateAvailable 
   const [updateInfo, setUpdateInfo] = useState<VersionInfo | null>(null);
   const [showUpdateDialog, setShowUpdateDialog] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const dialogRef = useRef<HTMLDivElement | null>(null);
 
   const t = (zh: string, en: string) => language === 'zh' ? zh : en;
 
@@ -39,11 +40,11 @@ export const UpdateChecker: React.FC<UpdateCheckerProps> = ({ onUpdateAvailable 
           dismissed: false
         });
       } else if (!silent) {
-        toast(t('褰撳墠宸叉槸鏈€鏂扮増鏈紒', 'You are already using the latest version!'), 'info');
+        toast(t('当前已经是最新版本！', 'You are already using the latest version!'), 'info');
       }
     } catch (checkError) {
       const errorMessage = t(
-        '妫€鏌ユ洿鏂板け璐ワ紝璇锋鏌ョ綉缁滆繛鎺?',
+        '检查更新失败，请检查网络连接。',
         'Failed to check for updates. Please check your network connection.'
       );
       setError(errorMessage);
@@ -71,6 +72,12 @@ export const UpdateChecker: React.FC<UpdateCheckerProps> = ({ onUpdateAvailable 
     }
   };
 
+  useEffect(() => {
+    if (showUpdateDialog) {
+      dialogRef.current?.focus();
+    }
+  }, [showUpdateDialog]);
+
   return (
     <>
       <button
@@ -85,8 +92,8 @@ export const UpdateChecker: React.FC<UpdateCheckerProps> = ({ onUpdateAvailable 
         )}
         <span>
           {isChecking
-            ? t('妫€鏌ヤ腑...', 'Checking...')
-            : t('妫€鏌ユ洿鏂?', 'Check for Updates')}
+            ? t('检查中...', 'Checking...')
+            : t('检查更新', 'Check for Updates')}
         </span>
       </button>
 
@@ -98,7 +105,17 @@ export const UpdateChecker: React.FC<UpdateCheckerProps> = ({ onUpdateAvailable 
 
       {showUpdateDialog && updateInfo && ReactDOM.createPortal(
         <div
+          ref={dialogRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="update-dialog-title"
+          tabIndex={-1}
           className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4"
+          onKeyDown={(event) => {
+            if (event.key === 'Escape') {
+              setShowUpdateDialog(false);
+            }
+          }}
           onClick={(event) => {
             if (event.target === event.currentTarget) {
               setShowUpdateDialog(false);
@@ -112,8 +129,8 @@ export const UpdateChecker: React.FC<UpdateCheckerProps> = ({ onUpdateAvailable 
                   <Package className="h-6 w-6 text-brand-violet dark:text-brand-violet" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-text-primary">
-                    {t('鍙戠幇鏂扮増鏈?', 'New Version Available')}
+                  <h3 id="update-dialog-title" className="text-lg font-semibold text-gray-900 dark:text-text-primary">
+                    {t('发现新版本', 'New Version Available')}
                   </h3>
                   <p className="text-sm text-gray-500 dark:text-text-tertiary">v{updateInfo.number}</p>
                 </div>
@@ -122,12 +139,12 @@ export const UpdateChecker: React.FC<UpdateCheckerProps> = ({ onUpdateAvailable 
               <div className="mb-4">
                 <div className="mb-3 flex items-center space-x-2 text-sm text-gray-700 dark:text-text-tertiary">
                   <Calendar className="h-4 w-4" />
-                  <span>{t('鍙戝竷鏃ユ湡:', 'Release Date:')} {formatDate(updateInfo.releaseDate)}</span>
+                  <span>{t('发布日期：', 'Release Date:')} {formatDate(updateInfo.releaseDate)}</span>
                 </div>
 
                 <div className="mb-4">
                   <h4 className="mb-2 font-medium text-gray-900 dark:text-text-primary">
-                    {t('鏇存柊鍐呭:', "What's New:")}
+                    {t('更新内容：', "What's New:")}
                   </h4>
                   <ul className="space-y-1">
                     {updateInfo.changelog.map((item, index) => (
@@ -149,13 +166,13 @@ export const UpdateChecker: React.FC<UpdateCheckerProps> = ({ onUpdateAvailable 
                   className="flex flex-1 items-center justify-center space-x-2 rounded-lg bg-brand-indigo px-4 py-2 text-white transition-colors hover:bg-brand-hover"
                 >
                   <ExternalLink className="h-4 w-4" />
-                  <span>{t('绔嬪嵆涓嬭浇', 'Download Now')}</span>
+                  <span>{t('立即下载', 'Download Now')}</span>
                 </button>
                 <button
                   onClick={() => setShowUpdateDialog(false)}
                   className="rounded-lg bg-gray-200 px-4 py-2 text-gray-900 transition-colors hover:bg-gray-300 dark:bg-white/[0.04] dark:text-text-secondary dark:hover:bg-gray-600"
                 >
-                  {t('绋嶅悗鎻愰啋', 'Later')}
+                  {t('稍后提醒', 'Later')}
                 </button>
               </div>
             </div>

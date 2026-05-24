@@ -118,7 +118,7 @@ class BackendAdapter {
         await new Promise(resolve => setTimeout(resolve, delay));
       }
     }
-    throw lastError;
+    throw lastError ?? new Error('Request failed after retries');
   }
   private async throwTranslatedError(res: Response, fallbackPrefix: string): Promise<never> {
     let code: string | undefined;
