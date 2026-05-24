@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Search, X, SlidersHorizontal, Monitor, Smartphone, Globe, Terminal, Package, CheckCircle, Bell, BellOff, Apple, Bot, Edit3, Lock, Unlock, AlertCircle, ChevronDown } from 'lucide-react';
 import { useAppStore, getAllCategories } from '../store/useAppStore';
 import { AIService } from '../services/aiService';
@@ -223,34 +223,6 @@ export const SearchBar: React.FC = () => {
     }
   }, [repositories]);
 
-  useEffect(() => {
-    const performSearch = async () => {
-      if (!searchFilters.query) {
-        performBasicFilter();
-      } else {
-        const textResults = performBasicTextSearch(repositories, searchFilters.query);
-        const finalFiltered = applyFilters(textResults);
-        setSearchResults(finalFiltered);
-      }
-    };
-
-    performSearch();
-  }, [searchFilters.languages, searchFilters.tags, searchFilters.platforms, searchFilters.isAnalyzed, searchFilters.isSubscribed, searchFilters.isEdited, searchFilters.isCategoryLocked, searchFilters.analysisFailed, searchFilters.minStars, searchFilters.maxStars, searchFilters.sortBy, searchFilters.sortOrder, searchFilters.query, repositories, releaseSubscriptions, allCategories]);
-
-  // Real-time search effect for repository name matching
-  useEffect(() => {
-    if (searchQuery && isRealTimeSearch) {
-      const timeoutId = setTimeout(() => {
-        performRealTimeSearch(searchQuery);
-      }, 300); // 300ms debounce to avoid too frequent searches
-
-      return () => clearTimeout(timeoutId);
-    } else if (!searchQuery) {
-      // Reset to show all repositories when search is empty
-      performBasicFilter();
-    }
-  }, [searchQuery, isRealTimeSearch, repositories, allCategories]);
-
   // Handle composition events for better IME support (Chinese input)
   const handleCompositionStart = () => {
     // Pause real-time search during IME composition
@@ -265,35 +237,7 @@ export const SearchBar: React.FC = () => {
     }
   };
 
-  const performRealTimeSearch = (query: string) => {
-    const startTime = performance.now();
-    
-    if (!query.trim()) {
-      performBasicFilter();
-      return;
-    }
-
-    // Real-time search only matches repository names for fast response
-    const normalizedQuery = query.toLowerCase();
-    const filtered = repositories.filter(repo => {
-      return repo.name.toLowerCase().includes(normalizedQuery) ||
-             repo.full_name.toLowerCase().includes(normalizedQuery);
-    });
-
-    // Apply other filters
-    const finalFiltered = applyFilters(filtered);
-    setSearchResults(finalFiltered);
-    
-    const endTime = performance.now();
-    console.log(`Real-time search completed in ${(endTime - startTime).toFixed(2)}ms`);
-  };
-
-  const performBasicFilter = () => {
-    const filtered = applyFilters(repositories);
-    setSearchResults(filtered);
-  };
-
-  const performBasicTextSearch = (repos: typeof repositories, query: string) => {
+  const performBasicTextSearch = useCallback((repos: typeof repositories, query: string) => {
     const normalizedQuery = query.toLowerCase();
     
     return repos.filter(repo => {
@@ -313,9 +257,9 @@ export const SearchBar: React.FC = () => {
       const queryWords = normalizedQuery.split(/\s+/);
       return queryWords.every(word => searchableText.includes(word));
     });
-  };
+  }, []);
 
-  const applyFilters = (repos: typeof repositories) => {
+  const applyFilters = useCallback((repos: typeof repositories) => {
     let filtered = repos;
 
     // Language filter
@@ -533,7 +477,63 @@ export const SearchBar: React.FC = () => {
     }
 
     return filtered;
-  };
+  }, [searchFilters, releaseSubscriptions, allCategories, setSearchFilters]);
+
+  const performBasicFilter = useCallback(() => {
+    const filtered = applyFilters(repositories);
+    setSearchResults(filtered);
+  }, [applyFilters, repositories, setSearchResults]);
+
+  const performRealTimeSearch = useCallback((query: string) => {
+    const startTime = performance.now();
+
+    if (!query.trim()) {
+      performBasicFilter();
+      return;
+    }
+
+    // Real-time search only matches repository names for fast response
+    const normalizedQuery = query.toLowerCase();
+    const filtered = repositories.filter(repo => {
+      return repo.name.toLowerCase().includes(normalizedQuery) ||
+             repo.full_name.toLowerCase().includes(normalizedQuery);
+    });
+
+    // Apply other filters
+    const finalFiltered = applyFilters(filtered);
+    setSearchResults(finalFiltered);
+
+    const endTime = performance.now();
+    console.log(`Real-time search completed in ${(endTime - startTime).toFixed(2)}ms`);
+  }, [repositories, applyFilters, performBasicFilter, setSearchResults]);
+
+  useEffect(() => {
+    const performSearch = async () => {
+      if (!searchFilters.query) {
+        performBasicFilter();
+      } else {
+        const textResults = performBasicTextSearch(repositories, searchFilters.query);
+        const finalFiltered = applyFilters(textResults);
+        setSearchResults(finalFiltered);
+      }
+    };
+
+    performSearch();
+  }, [searchFilters.query, repositories, performBasicFilter, performBasicTextSearch, applyFilters, setSearchResults]);
+
+  // Real-time search effect for repository name matching
+  useEffect(() => {
+    if (searchQuery && isRealTimeSearch) {
+      const timeoutId = setTimeout(() => {
+        performRealTimeSearch(searchQuery);
+      }, 300); // 300ms debounce to avoid too frequent searches
+
+      return () => clearTimeout(timeoutId);
+    } else if (!searchQuery) {
+      // Reset to show all repositories when search is empty
+      performBasicFilter();
+    }
+  }, [searchQuery, isRealTimeSearch, performRealTimeSearch, performBasicFilter]);
 
   const handleAISearch = async () => {
     if (!searchQuery.trim()) return;

@@ -29,7 +29,7 @@ export const SubscriptionRepoCard: React.FC<SubscriptionRepoCardProps> = ({ repo
 
   const { toast } = useDialog();
 
-  const t = (zh: string, en: string) => language === 'zh' ? zh : en;
+  const t = useCallback((zh: string, en: string) => language === 'zh' ? zh : en, [language]);
 
   const [isStarring, setIsStarring] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -76,7 +76,7 @@ export const SubscriptionRepoCard: React.FC<SubscriptionRepoCardProps> = ({ repo
 
   const rankBadgeClass = useMemo(() => {
     return 'bg-light-surface dark:bg-white/[0.04] text-gray-700 dark:text-text-secondary';
-  }, [repo.rank]);
+  }, []);
 
   const platformIconMap = useMemo(() => ({
     mac: <Monitor className="w-3 h-3" />, 
@@ -130,7 +130,7 @@ export const SubscriptionRepoCard: React.FC<SubscriptionRepoCardProps> = ({ repo
       setIsStarring(false);
       setPendingUnstarAction(null);
     }
-  }, [repo, repositories, deleteRepository, t]);
+  }, [repo, repositories, deleteRepository, t, toast]);
 
   // 处理添加/取消Star
   const handleStar = useCallback(async (e: React.MouseEvent) => {
@@ -189,7 +189,7 @@ export const SubscriptionRepoCard: React.FC<SubscriptionRepoCardProps> = ({ repo
     } finally {
       setIsStarring(false);
     }
-  }, [isStarring, repo, onStar, t, isStarred, addRepository, executeUnstar]);
+  }, [isStarring, repo, onStar, t, isStarred, addRepository, executeUnstar, toast]);
 
   // 处理在ZRead打开
   const handleOpenInZRead = useCallback((e: React.MouseEvent) => {
@@ -333,7 +333,7 @@ export const SubscriptionRepoCard: React.FC<SubscriptionRepoCardProps> = ({ repo
         setIsAnalyzing(false);
       }
     }
-  }, [githubToken, aiConfigs, activeAIConfig, language, repo, isAnalyzing, customCategories, updateDiscoveryRepo, onAnalyze, t]);
+  }, [githubToken, aiConfigs, activeAIConfig, language, repo, isAnalyzing, customCategories, updateDiscoveryRepo, onAnalyze, t, toast]);
 
   // 判断是否已分析
   const isAnalyzed = !!repo.analyzed_at && !repo.analysis_failed;

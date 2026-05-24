@@ -657,7 +657,7 @@ export const DiscoveryView: React.FC = React.memo(() => {
         setDiscoveryLoading(channelId, false);
       }
     }
-  }, [githubToken, t, setDiscoveryLoading, setDiscoveryLoadingMore, setDiscoveryLoadMoreError, setDiscoveryRepos, setDiscoveryLastRefresh, discoveryPlatform, discoveryLanguage, discoverySortBy, discoverySortOrder, discoverySearchQuery, discoverySelectedTopic, setDiscoveryHasMore, setDiscoveryNextPage, setDiscoveryTotalCount, appendDiscoveryRepos, trendingTimeRange]);
+  }, [githubToken, toast, t, setDiscoveryLoading, setDiscoveryLoadingMore, setDiscoveryLoadMoreError, setDiscoveryRepos, setDiscoveryLastRefresh, discoveryPlatform, discoveryLanguage, discoverySortBy, discoverySortOrder, discoverySearchQuery, discoverySelectedTopic, setDiscoveryHasMore, setDiscoveryNextPage, setDiscoveryTotalCount, appendDiscoveryRepos, trendingTimeRange]);
 
   // 切换频道时恢复滚动位置，并自动加载空数据
   useEffect(() => {
@@ -686,7 +686,7 @@ export const DiscoveryView: React.FC = React.memo(() => {
     if (selectedDiscoveryChannel === 'topic' && discoverySelectedTopic) {
       refreshChannel('topic', 1, false);
     }
-  }, [discoverySelectedTopic, selectedDiscoveryChannel]);
+  }, [discoverySelectedTopic, selectedDiscoveryChannel, refreshChannel]);
 
   const formatLastRefresh = useCallback((timestamp: string | null) => {
     if (!timestamp) return '';
@@ -968,7 +968,7 @@ export const DiscoveryView: React.FC = React.memo(() => {
       setAnalysisOptimizer(null);
       setAnalysisProgress({ current: 0, total: 0 });
     }
-  }, [githubToken, aiConfigs, activeAIConfig, language, allRepos, t, updateDiscoveryRepo, setAnalysisProgress]);
+  }, [githubToken, aiConfigs, activeAIConfig, language, allRepos, t, updateDiscoveryRepo, setAnalysisProgress, discoveryPlatform, selectedDiscoveryChannel, toast]);
 
 
 

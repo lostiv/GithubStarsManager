@@ -118,7 +118,7 @@ class BackendAdapter {
         await new Promise(resolve => setTimeout(resolve, delay));
       }
     }
-    throw lastError!; // eslint-disable-line @typescript-eslint/no-unnecessary-type-assertion -- TypeScript control flow can't prove this is unreachable
+    throw lastError;
   }
   private async throwTranslatedError(res: Response, fallbackPrefix: string): Promise<never> {
     let code: string | undefined;
