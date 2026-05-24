@@ -27,7 +27,7 @@
     "supertest": "^6.3.4",
     "tsx": "^4.7.0",
     "typescript": "^5.5.3",
-    "vitest": "^1.6.0"
+    "vitest": "^4.1.7"
   },
   "overrides": {
     "path-to-regexp": "0.1.13",
