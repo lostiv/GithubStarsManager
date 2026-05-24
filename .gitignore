@@ -44,5 +44,8 @@ server/dist/
 hooks/
 .claude/skills/
 
+# Local CodeGraph index
+.codegraph/
+
 # Landing page (separate static site)
 LandingPage/
