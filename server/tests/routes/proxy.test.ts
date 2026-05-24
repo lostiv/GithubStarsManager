@@ -338,4 +338,77 @@ describe('GitHub search proxy routes', () => {
     expect(calledOptions.method).toBe('GET');
     expect(calledOptions.body).toBeUndefined();
   });
+
+  it('routes user search through the specific GET proxy with query params', async () => {
+    const responseData = { items: [{ login: 'lostiv', html_url: 'https://github.com/lostiv' }] };
+    mockFetch.mockResolvedValueOnce({
+      status: 200,
+      headers: new Headers({ 'content-type': 'application/json' }),
+      json: () => Promise.resolve(responseData),
+      text: () => Promise.resolve(JSON.stringify(responseData)),
+    });
+
+    const app = createApp();
+    const response = await request(app)
+      .post('/api/proxy/github/search/users')
+      .send({ query_params: { q: 'followers:>1000', sort: 'followers', per_page: '10' } });
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual(responseData);
+    expect(mockFetch).toHaveBeenCalledOnce();
+
+    const [calledUrl, calledOptions] = mockFetch.mock.calls[0];
+    const url = new URL(calledUrl);
+    expect(`${url.origin}${url.pathname}`).toBe('https://api.github.com/search/users');
+    expect(url.searchParams.get('q')).toBe('followers:>1000');
+    expect(url.searchParams.get('sort')).toBe('followers');
+    expect(url.searchParams.get('per_page')).toBe('10');
+    expect(calledOptions.method).toBe('GET');
+    expect(calledOptions.body).toBeUndefined();
+  });
+
+  it('returns 400 when query_params is an array', async () => {
+    const app = createApp();
+    const response = await request(app)
+      .post('/api/proxy/github/search/users')
+      .send({ query_params: ['invalid'] });
+
+    expect(response.status).toBe(400);
+    expect(response.body.code).toBe('INVALID_QUERY_PARAMS');
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it('returns 400 when query_params value is not a string', async () => {
+    const app = createApp();
+    const response = await request(app)
+      .post('/api/proxy/github/search/users')
+      .send({ query_params: { q: 123 } });
+
+    expect(response.status).toBe(400);
+    expect(response.body.code).toBe('INVALID_QUERY_PARAMS');
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it('returns 400 when query_params key exceeds length limit', async () => {
+    const app = createApp();
+    const longKey = 'a'.repeat(101);
+    const response = await request(app)
+      .post('/api/proxy/github/search/users')
+      .send({ query_params: { [longKey]: 'value' } });
+
+    expect(response.status).toBe(400);
+    expect(response.body.code).toBe('INVALID_QUERY_PARAMS');
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it('returns 400 when query_params contains an empty key', async () => {
+    const app = createApp();
+    const response = await request(app)
+      .post('/api/proxy/github/search/users')
+      .send({ query_params: { '': 'value' } });
+
+    expect(response.status).toBe(400);
+    expect(response.body.code).toBe('INVALID_QUERY_PARAMS');
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
 });

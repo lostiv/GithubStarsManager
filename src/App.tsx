@@ -11,7 +11,7 @@ import { DiscoveryView } from './components/DiscoveryView';
 import { BackToTop } from './components/BackToTop';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { useAppStore } from './store/useAppStore';
-import { useAutoUpdateCheck } from './components/UpdateChecker';
+import { useAutoUpdateCheck } from './hooks/useAutoUpdateCheck';
 import { UpdateNotificationBanner } from './components/UpdateNotificationBanner';
 import { backend } from './services/backendAdapter';
 import { syncFromBackend, startAutoSync } from './services/autoSync';

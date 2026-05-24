@@ -328,7 +328,7 @@ export const DataManagementPanel: React.FC<DataManagementPanelProps> = ({ t }) =
     }
   };
 
-  const deleteDiscoveryData = async () => {
+  const deleteDiscoveryData = useCallback(async () => {
     try {
       const emptyDiscoveryRepos = {
         'trending': [],
@@ -358,7 +358,7 @@ export const DataManagementPanel: React.FC<DataManagementPanelProps> = ({ t }) =
       showError(t('删除失败，请重试', 'Delete failed, please try again'));
       throw error;
     }
-  };
+  }, [addLog, showSuccess, showError, t]);
 
   const deleteSubscriptionData = async () => {
     try {
