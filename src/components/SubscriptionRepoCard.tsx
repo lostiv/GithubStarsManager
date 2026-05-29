@@ -44,6 +44,16 @@ export const SubscriptionRepoCard: React.FC<SubscriptionRepoCardProps> = ({ repo
   const [aiTooltip, setAiTooltip] = useState(false);
   const descTriggerRef = useRef<HTMLDivElement>(null);
   const aiTriggerRef = useRef<HTMLDivElement>(null);
+  const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const scheduleHide = useCallback((setter: (v: boolean) => void) => {
+    if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+    hideTimerRef.current = setTimeout(() => setter(false), 150);
+  }, []);
+
+  const cancelHide = useCallback(() => {
+    if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+  }, []);
 
   const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -484,10 +494,10 @@ export const SubscriptionRepoCard: React.FC<SubscriptionRepoCardProps> = ({ repo
             <div
               ref={descTriggerRef}
               className="relative mb-3"
-              onMouseEnter={() => setDescTooltip(true)}
-              onMouseLeave={() => setDescTooltip(false)}
-              onFocus={() => setDescTooltip(true)}
-              onBlur={() => setDescTooltip(false)}
+              onMouseEnter={() => { cancelHide(); setDescTooltip(true); }}
+              onMouseLeave={() => scheduleHide(setDescTooltip)}
+              onFocus={() => { cancelHide(); setDescTooltip(true); }}
+              onBlur={() => scheduleHide(setDescTooltip)}
               onTouchStart={() => setDescTooltip((v) => !v)}
               tabIndex={0}
             >
@@ -498,7 +508,8 @@ export const SubscriptionRepoCard: React.FC<SubscriptionRepoCardProps> = ({ repo
                 content={repo.description}
                 visible={descTooltip}
                 triggerRef={descTriggerRef}
-                onMouseLeave={() => setDescTooltip(false)}
+                onMouseEnter={() => { cancelHide(); }}
+                onMouseLeave={() => scheduleHide(setDescTooltip)}
               />
             </div>
           )}
@@ -508,10 +519,10 @@ export const SubscriptionRepoCard: React.FC<SubscriptionRepoCardProps> = ({ repo
             <div
               ref={aiTriggerRef}
               className="relative flex items-start gap-1.5 mb-3"
-              onMouseEnter={() => setAiTooltip(true)}
-              onMouseLeave={() => setAiTooltip(false)}
-              onFocus={() => setAiTooltip(true)}
-              onBlur={() => setAiTooltip(false)}
+              onMouseEnter={() => { cancelHide(); setAiTooltip(true); }}
+              onMouseLeave={() => scheduleHide(setAiTooltip)}
+              onFocus={() => { cancelHide(); setAiTooltip(true); }}
+              onBlur={() => scheduleHide(setAiTooltip)}
               onTouchStart={() => setAiTooltip((v) => !v)}
               tabIndex={0}
             >
@@ -523,7 +534,8 @@ export const SubscriptionRepoCard: React.FC<SubscriptionRepoCardProps> = ({ repo
                 content={repo.ai_summary}
                 visible={aiTooltip}
                 triggerRef={aiTriggerRef}
-                onMouseLeave={() => setAiTooltip(false)}
+                onMouseEnter={() => { cancelHide(); }}
+                onMouseLeave={() => scheduleHide(setAiTooltip)}
               />
             </div>
           )}
