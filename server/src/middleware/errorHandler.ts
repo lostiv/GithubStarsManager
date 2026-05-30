@@ -1,4 +1,5 @@
 import type { Request, Response, NextFunction } from 'express';
+import { logger } from '../services/logger.js';
 
 export function errorHandler(
   err: Error,
@@ -7,6 +8,7 @@ export function errorHandler(
   _next: NextFunction
 ): void {
   console.error('Unhandled error:', err.stack || err.message);
+  logger.errorFromError('server.errorHandler', 'Unhandled error', err);
 
   if (res.headersSent) {
     return _next(err);

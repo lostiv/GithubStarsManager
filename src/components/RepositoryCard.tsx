@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { GripVertical, Star, StarOff, ExternalLink, Calendar, Bell, BellOff, Bot, Sparkles, Monitor, Smartphone, Globe, Terminal, Package, Edit3, BookOpen, Apple, Square, CheckSquare, Loader2 } from 'lucide-react';
+import { GripVertical, Star, StarOff, ExternalLink, Calendar, Bell, BellOff, Bot, Sparkles, Monitor, Smartphone, Globe, Terminal, Package, Edit3, BookOpen, Apple, Square, CheckSquare, Loader2, HelpCircle } from 'lucide-react';
 import { Repository, Category } from '../types';
 import { useAppStore } from '../store/useAppStore';
 import { getAICategory, getDefaultCategory } from '../utils/categoryUtils';
@@ -12,6 +12,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
 import { RepositoryEditModal } from './RepositoryEditModal';
 import { ReadmeModal } from './ReadmeModal';
+import { FloatingTooltip } from './FloatingTooltip';
 import { shallow } from 'zustand/shallow';
 import { useDialog } from '../hooks/useDialog';
 
@@ -137,12 +138,11 @@ const RepositoryCardComponent: React.FC<RepositoryCardProps> = ({
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [readmeModalOpen, setReadmeModalOpen] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
-  const [isTextTruncated, setIsTextTruncated] = useState(false);
+  const descTriggerRef = useRef<HTMLDivElement>(null);
+  const tooltipHideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [unstarring, setUnstarring] = useState(false);
   const [showDragHint, setShowDragHint] = useState(false);
   const dragHintTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const descriptionRef = useRef<HTMLParagraphElement>(null);
 
   // 高亮搜索关键词的工具函数 - 使用缓存优化
   const highlightSearchTerm = useCallback((text: string, searchTerm: string): React.ReactNode => {
@@ -178,28 +178,17 @@ const RepositoryCardComponent: React.FC<RepositoryCardProps> = ({
     return result;
   }, []);
 
-  // Check if text is actually truncated by comparing scroll height with client height
+  // Cleanup timeouts on unmount
   useEffect(() => {
-    const checkTruncation = () => {
-      if (descriptionRef.current) {
-        const element = descriptionRef.current;
-        const isTruncated = element.scrollHeight > element.clientHeight;
-        setIsTextTruncated(isTruncated);
-      }
-    };
-
-    // Check truncation after component mounts and when content changes
-    checkTruncation();
-
-    // Also check on window resize
-    window.addEventListener('resize', checkTruncation);
     return () => {
-      window.removeEventListener('resize', checkTruncation);
       if (dragHintTimeoutRef.current) {
         clearTimeout(dragHintTimeoutRef.current);
       }
+      if (tooltipHideTimerRef.current) {
+        clearTimeout(tooltipHideTimerRef.current);
+      }
     };
-  }, [repository, showAISummary]);
+  }, []);
 
   const formatNumber = (num: number) => {
     if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
@@ -357,7 +346,8 @@ const RepositoryCardComponent: React.FC<RepositoryCardProps> = ({
         custom_category: result.custom_category,
         category_locked: result.category_locked,
         analyzed_at: result.analyzed_at,
-        analysis_failed: result.analysis_failed
+        analysis_failed: result.analysis_failed,
+        analysis_error: undefined,
       };
 
       updateRepository(updatedRepo);
@@ -371,11 +361,15 @@ const RepositoryCardComponent: React.FC<RepositoryCardProps> = ({
       if (!controller.signal.aborted) {
         console.error('AI analysis failed:', error);
 
-        const failedResult = createFailedAnalysisResult();
+        const errorMsg = error instanceof Error && error.message
+          ? error.message
+          : (language === 'zh' ? 'AI分析失败，请检查AI配置和网络连接' : 'AI analysis failed, please check AI configuration and network connection');
+        const failedResult = createFailedAnalysisResult(errorMsg);
         const failedRepo = {
           ...repository,
           analyzed_at: failedResult.analyzed_at,
-          analysis_failed: failedResult.analysis_failed
+          analysis_failed: failedResult.analysis_failed,
+          analysis_error: failedResult.analysis_error,
         };
 
         updateRepository(failedRepo);
@@ -770,6 +764,9 @@ const RepositoryCardComponent: React.FC<RepositoryCardProps> = ({
     const exitingClasses = isExitingSelection && isSelected ? 'animate-selection-exit' : '';
     return `${baseClasses} ${selectedClasses} ${exitingClasses}`.trim();
   }, [isSelected, isExitingSelection]);
+  const descriptionTooltipId = `repo-description-tooltip-${repoId}`;
+  const analysisErrorMessage = repository.analysis_error || (language === 'zh' ? 'AI分析失败，请检查AI配置和网络连接' : 'AI analysis failed, please check AI configuration and network connection');
+  const analysisErrorTooltipId = `repo-analysis-error-${repoId}`;
 
   return (
     <div
@@ -913,30 +910,32 @@ const RepositoryCardComponent: React.FC<RepositoryCardProps> = ({
         </div>
       </div>
 
-      {/* Description with Tooltip - Enhanced for Light Mode */}
+      {/* Description with Tooltip */}
       <div className="mb-4 flex-1">
         <div
+          ref={descTriggerRef}
           className="relative group"
-          onMouseEnter={() => isTextTruncated && setShowTooltip(true)}
-          onMouseLeave={() => setShowTooltip(false)}
+          onMouseEnter={() => { clearTimeout(tooltipHideTimerRef.current); setShowTooltip(true); }}
+          onMouseLeave={() => { tooltipHideTimerRef.current = setTimeout(() => setShowTooltip(false), 150); }}
+          onFocus={() => { clearTimeout(tooltipHideTimerRef.current); setShowTooltip(true); }}
+          onBlur={() => { tooltipHideTimerRef.current = setTimeout(() => setShowTooltip(false), 150); }}
+          onTouchStart={() => setShowTooltip((v) => !v)}
+          tabIndex={0}
+          aria-describedby={showTooltip ? descriptionTooltipId : undefined}
         >
           <p
-            ref={descriptionRef}
             className="text-gray-800 dark:text-text-secondary text-[13px] leading-[1.625] line-clamp-3 mb-2 transition-colors duration-200 hover:text-gray-900 dark:hover:text-text-primary rounded px-1 -mx-1 hover:bg-gray-50/50 dark:hover:bg-white/[0.02]"
           >
             {highlightSearchTerm(displayContent.content, searchQuery)}
           </p>
-
-          {/* Enhanced Tooltip - Optimized for Light Mode Readability */}
-          {isTextTruncated && showTooltip && (
-            <div className="absolute z-50 bottom-full left-0 right-0 mb-2 p-4 bg-white dark:bg-surface-3 text-gray-900 dark:text-text-primary text-[13px] leading-[1.625] rounded-xl shadow-dialog border border-gray-200/80 dark:border-white/[0.04] animate-fade-in max-h-[280px] overflow-y-auto scrollbar-auto">
-              <div className="whitespace-pre-wrap break-words pr-2">
-                {highlightSearchTerm(displayContent.content, searchQuery)}
-              </div>
-              {/* Arrow with Light Mode Optimization */}
-              <div className="absolute top-full left-4 w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[6px] border-t-white dark:border-t-surface-3 drop-shadow-sm"></div>
-            </div>
-          )}
+          <FloatingTooltip
+            content={highlightSearchTerm(displayContent.content, searchQuery)}
+            visible={showTooltip}
+            triggerRef={descTriggerRef}
+            id={descriptionTooltipId}
+            onMouseEnter={() => clearTimeout(tooltipHideTimerRef.current)}
+            onMouseLeave={() => { tooltipHideTimerRef.current = setTimeout(() => setShowTooltip(false), 150); }}
+          />
         </div>
 
         {/* 方案一：同时显示多个状态标签 */}
@@ -953,6 +952,28 @@ const RepositoryCardComponent: React.FC<RepositoryCardProps> = ({
             <div className="flex items-center space-x-1 text-xs text-status-red dark:text-status-red" title={language === 'zh' ? 'AI分析失败，点击AI按钮重新分析' : 'AI analysis failed, click AI button to retry'}>
               <Bot className="w-3 h-3" />
               <span>{language === 'zh' ? '分析失败' : 'Failed'}</span>
+              <div className="group relative inline-flex">
+                <button
+                  type="button"
+                  onClick={(event) => event.stopPropagation()}
+                  onKeyDown={(event) => event.stopPropagation()}
+                  className="inline-flex rounded-full text-status-red/70 dark:text-status-red/70 cursor-help focus:outline-none focus:ring-2 focus:ring-status-red/40"
+                  aria-label={`${language === 'zh' ? 'AI分析失败' : 'AI analysis error'}: ${analysisErrorMessage}`}
+                  aria-describedby={analysisErrorTooltipId}
+                >
+                  <HelpCircle className="w-3 h-3" />
+                </button>
+                <div
+                  id={analysisErrorTooltipId}
+                  role="tooltip"
+                  className="absolute left-0 top-full mt-2 w-72 max-w-xs p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white text-xs rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible group-focus-within:opacity-100 group-focus-within:visible transition-all z-[9999] whitespace-normal break-words"
+                >
+                  <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
+                    {analysisErrorMessage}
+                  </p>
+                  <div className="absolute top-[-4px] left-3 w-2 h-2 bg-white dark:bg-gray-800 border-l border-t border-gray-200 dark:border-gray-700 transform rotate-45"></div>
+                </div>
+              </div>
             </div>
           ) : displayContent.isAnalyzed ? (
             <div 
@@ -1093,6 +1114,7 @@ export const RepositoryCard = React.memo(RepositoryCardComponent, (prevProps, ne
     prevProps.repository.id === nextProps.repository.id &&
     prevProps.repository.analyzed_at === nextProps.repository.analyzed_at &&
     prevProps.repository.analysis_failed === nextProps.repository.analysis_failed &&
+    prevProps.repository.analysis_error === nextProps.repository.analysis_error &&
     prevProps.repository.ai_summary === nextProps.repository.ai_summary &&
     prevProps.repository.ai_tags === nextProps.repository.ai_tags &&
     prevProps.repository.ai_platforms === nextProps.repository.ai_platforms &&

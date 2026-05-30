@@ -18,8 +18,15 @@ import analysisRouter from './routes/analysis.js';
 import backupRouter from './routes/backup.js';
 import forksRouter from './routes/forks.js';
 import autoSyncRouter from './routes/autoSyncRoutes.js';
+import logsRouter from './routes/logs.js';
 import { startBackupScheduler, stopBackupScheduler } from './services/backupService.js';
 import { startAutoSyncScheduler, stopAutoSyncScheduler } from './services/autoSyncService.js';
+import { logger, morganLoggerStream } from './services/logger.js';
+
+morgan.token('safe-url', (req) => {
+  const expressReq = req as express.Request;
+  return expressReq.path || req.url?.split('?')[0] || '-';
+});
 
 export function createApp(): express.Express {
   const app = express();
@@ -27,7 +34,7 @@ export function createApp(): express.Express {
   // Middleware
   app.use(helmet());
   app.use(cors());
-  app.use(morgan('combined'));
+  app.use(morgan(':remote-addr - :remote-user [:date[clf]] ":method :safe-url HTTP/:http-version" :status :res[content-length] ":referrer" ":user-agent"', { stream: morganLoggerStream }));
   app.use(express.json({ limit: '50mb' }));
 
   // Auth middleware for all /api/* except /api/health
@@ -50,6 +57,7 @@ export function createApp(): express.Express {
   app.use(backupRouter);
   app.use(forksRouter);
   app.use(autoSyncRouter);
+  app.use(logsRouter);
 
   // Global error handler
   app.use(errorHandler);
@@ -61,27 +69,33 @@ function startServer(): void {
   // Initialize database
   const db = getDb();
   runMigrations(db);
+  logger.info('server.startup', 'Database initialized');
   console.log('✅ Database initialized');
 
   // Start auto-backup scheduler
   startBackupScheduler();
+  logger.info('server.startup', 'Backup scheduler started');
   console.log('✅ Backup scheduler started');
 
   // Start auto-sync scheduler
   startAutoSyncScheduler();
+  logger.info('server.startup', 'Auto-sync scheduler started');
   console.log('✅ Auto-sync scheduler started');
 
   const app = createApp();
 
   const server = app.listen(config.port, () => {
+    logger.info('server.startup', 'Server started', { port: config.port, authEnabled: Boolean(config.apiSecret) });
     console.log(`🚀 Server running on port ${config.port}`);
     if (!config.apiSecret) {
+      logger.warn('server.auth', 'Running without API_SECRET; auth is disabled');
       console.warn('⚠️  Running without API_SECRET — auth is disabled');
     }
   });
 
   // Graceful shutdown
   const shutdown = () => {
+    logger.info('server.shutdown', 'Shutdown requested');
     console.log('\n🛑 Shutting down...');
     server.close(() => {
       stopBackupScheduler();

@@ -413,6 +413,7 @@ export const RepositoryList: React.FC<RepositoryListProps> = ({
             category_locked: wasCategoryLocked,
             analyzed_at: new Date().toISOString(),
             analysis_failed: false,
+            analysis_error: undefined,
           });
           successCount++;
         } else {
@@ -420,6 +421,7 @@ export const RepositoryList: React.FC<RepositoryListProps> = ({
             ...result.repo,
             analyzed_at: new Date().toISOString(),
             analysis_failed: true,
+            analysis_error: result.error?.message || undefined,
           });
           failedCount++;
         }
@@ -578,6 +580,7 @@ export const RepositoryList: React.FC<RepositoryListProps> = ({
             updatedRepo.ai_summary = undefined;
             updatedRepo.analyzed_at = undefined;
             updatedRepo.analysis_failed = undefined;
+            updatedRepo.analysis_error = undefined;
           }
         }
 
@@ -588,6 +591,7 @@ export const RepositoryList: React.FC<RepositoryListProps> = ({
             updatedRepo.ai_platforms = undefined;
             updatedRepo.analyzed_at = undefined;
             updatedRepo.analysis_failed = undefined;
+            updatedRepo.analysis_error = undefined;
           }
         }
 
@@ -599,6 +603,7 @@ export const RepositoryList: React.FC<RepositoryListProps> = ({
             updatedRepo.ai_platforms = undefined;
             updatedRepo.analyzed_at = undefined;
             updatedRepo.analysis_failed = undefined;
+            updatedRepo.analysis_error = undefined;
           }
         }
 
@@ -810,6 +815,7 @@ export const RepositoryList: React.FC<RepositoryListProps> = ({
                   category_locked: shouldKeepLocked || wasCategoryLocked,
                   analyzed_at: new Date().toISOString(),
                   analysis_failed: false,
+                  analysis_error: undefined,
                 });
                 successCount++;
               } else {
@@ -817,6 +823,7 @@ export const RepositoryList: React.FC<RepositoryListProps> = ({
                   ...result.repo,
                   analyzed_at: new Date().toISOString(),
                   analysis_failed: true,
+                  analysis_error: result.error?.message || undefined,
                 });
                 failedCount++;
               }

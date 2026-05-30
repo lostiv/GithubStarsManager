@@ -385,4 +385,15 @@
     </changelog>
     <downloadUrl>https://github.com/AmintaCCCP/GithubStarsManager/releases/download/v0.7.2/github-stars-manager-0.7.2.dmg</downloadUrl>
   </version>
+  <version>
+    <number>0.7.3</number>
+    <releaseDate>2026-05-30</releaseDate>
+    <changelog>
+      <item>Add frontend and backend diagnostic logs with sanitized in-memory buffers.</item>
+      <item>Add a Settings logs panel with filtering, debug toggles, export, and backend log polling.</item>
+      <item>Improve AI analysis failure visibility, description tooltips, and AI prompt/platform parsing.</item>
+      <item>Keep the release metadata focused on the Docker/web deployment instead of desktop packages.</item>
+    </changelog>
+    <downloadUrl>https://github.com/lostiv/GithubStarsManager/releases/tag/v0.7.3</downloadUrl>
+  </version>
 </versions>

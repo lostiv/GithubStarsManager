@@ -2,6 +2,7 @@ import { translateBackendError } from '../utils/backendErrors';
 
 import { Repository, Release, AIConfig, WebDAVConfig, ForkRepo, WorkflowDefinition, TranslateResult } from '../types';
 import { useAppStore } from '../store/useAppStore';
+import { logger } from './logger';
 
 class BackendAdapter {
   private _backendUrl: string | null = null;
@@ -34,6 +35,7 @@ class BackendAdapter {
             const data = await res.json();
             if (data.status === 'ok') {
               this._backendUrl = baseUrl;
+              logger.info('backendAdapter', 'Backend connected', { baseUrl });
               console.log(`✅ Backend connected: ${baseUrl}`);
               // 连接建立后同步 GitHub Token 状态到后端，清空/设置都会下发
               try {
@@ -51,9 +53,11 @@ class BackendAdapter {
       }
 
       this._backendUrl = null;
+      logger.warn('backendAdapter', 'Backend not available, using local-only mode');
       console.log('ℹ️ Backend not available, using local-only mode');
     } catch {
       this._backendUrl = null;
+      logger.warn('backendAdapter', 'Backend initialization failed, using local-only mode');
       console.log('ℹ️ Backend not available, using local-only mode');
     }
   }
@@ -80,8 +84,25 @@ class BackendAdapter {
   private async fetchWithTimeout(url: string, options?: RequestInit, timeoutMs = 30000): Promise<Response> {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+    const startedAt = performance.now();
+    const method = options?.method ?? 'GET';
     try {
-      return await fetch(url, { ...options, signal: controller.signal });
+      const response = await fetch(url, { ...options, signal: controller.signal });
+      logger.debug('backendAdapter', 'Backend request completed', {
+        method,
+        url,
+        status: response.status,
+        durationMs: Math.round(performance.now() - startedAt),
+      });
+      return response;
+    } catch (err) {
+      logger.warn('backendAdapter', 'Backend request attempt failed', {
+        method,
+        url,
+        durationMs: Math.round(performance.now() - startedAt),
+        error: err instanceof Error ? err.message : String(err),
+      });
+      throw err;
     } finally {
       clearTimeout(timeoutId);
     }
@@ -111,9 +132,23 @@ class BackendAdapter {
           (lastError as { cause?: { code?: string } }).cause?.code === 'UND_ERR_SOCKET' ||
           (lastError as { cause?: { code?: string } }).cause?.code === 'UND_ERR_CONNECT_TIMEOUT' ||
           (lastError as { cause?: { code?: string } }).cause?.code === 'UND_ERR_HEADERS_TIMEOUT';
-        if (!isRetryable || attempt === maxRetries) throw lastError;
+        if (!isRetryable || attempt === maxRetries) {
+          logger.errorFromError('backendAdapter', 'Backend request failed after retries', lastError, {
+            attempt: attempt + 1,
+            maxAttempts: maxRetries + 1,
+            url,
+            method: options?.method ?? 'GET',
+          });
+          throw lastError;
+        }
         // Exponential backoff: 1s, 2s, 4s
         const delay = Math.min(1000 * Math.pow(2, attempt), 4000);
+        logger.warn('backendAdapter', 'Retrying backend request after transient failure', {
+          attempt: attempt + 1,
+          maxAttempts: maxRetries + 1,
+          delayMs: delay,
+          message: lastError.message,
+        });
         console.warn(`⚠️ Sync request failed (attempt ${attempt + 1}/${maxRetries + 1}), retrying in ${delay}ms...`, lastError.message);
         await new Promise(resolve => setTimeout(resolve, delay));
       }
