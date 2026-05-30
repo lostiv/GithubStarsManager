@@ -65,3 +65,4 @@ npm run update-version 0.1.3 "修复搜索功能bug" "添加新的过滤选项" 
 2. 每次发布新版本时，确保 GitHub Release 中的下载链接可用
 3. XML 文件会被应用程序通过网络请求读取，确保文件格式正确
 4. 建议在发布前先在本地测试更新检查功能
+5. 当前 fork 以 Docker/Web 部署为主，不再发布桌面端安装包；`downloadUrl` 默认指向当前仓库的 GitHub Release tag。

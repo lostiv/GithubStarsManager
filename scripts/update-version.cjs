@@ -120,7 +120,7 @@ function updateVersionXML(version, changelog, customDownloadUrl) {
 
   // 生成下载链接
   const downloadUrl = customDownloadUrl || 
-    `https://github.com/AmintaCCCP/GithubStarsManager/releases/download/v${version}/github-stars-manager-${version}.dmg`;
+    `https://github.com/lostiv/GithubStarsManager/releases/tag/v${version}`;
 
   // 解析现有的XML
   const versionEntry = `  <version>

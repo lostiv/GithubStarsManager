@@ -13,9 +13,11 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { useAppStore } from './store/useAppStore';
 import { useAutoUpdateCheck } from './hooks/useAutoUpdateCheck';
 import { UpdateNotificationBanner } from './components/UpdateNotificationBanner';
+import { DebugModeIndicator } from './components/DebugModeIndicator';
 import { backend } from './services/backendAdapter';
 import { syncFromBackend, startAutoSync } from './services/autoSync';
 import { backendAnalysis } from './services/backendAnalysisService';
+import { logger } from './services/logger';
 import type { AppState } from './types';
 
 const RepositoriesView = React.memo(({ 
@@ -97,6 +99,7 @@ function App() {
         }
       } catch (err) {
         console.error('Failed to initialize backend:', err);
+        logger.errorFromError('app', 'Failed to initialize backend', err);
       }
     };
 
@@ -165,6 +168,7 @@ function App() {
         {currentViewContent}
       </main>
       <BackToTop />
+      <DebugModeIndicator />
     </div>
   );
 }

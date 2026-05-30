@@ -33,7 +33,7 @@ GitHub Stars Manager automatically syncs your starred repos, uses AI to summariz
 | **One‑click Downloads** | Expand release assets and download instantly |
 | **Smart Asset Filters** | Match assets by keywords (dmg / mac / arm64 / aarch64) |
 | **Bilingual Wiki Jump** | Deepwiki (EN) or zread (ZH) based on repository language |
-| **Packaged Client** | No environment setup required—download and run |
+| **Diagnostic Logs** | Capture sanitized frontend/backend logs for troubleshooting |
 
 ### Optional Backend Server
 
@@ -42,6 +42,7 @@ Deploy an Express + SQLite backend for:
 - **Cross-device Sync** — Share data between browsers and devices
 - **CORS-free API Proxying** — AI and WebDAV calls route through the server
 - **Encrypted Token Storage** — API keys stored securely, never exposed to browser
+- **Diagnostic Logs** - Inspect sanitized frontend/backend logs from the Settings panel
 
 ---
 

@@ -9,6 +9,7 @@ import {
   Package,
   X,
   Trash2,
+  ScrollText,
 } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import {
@@ -19,9 +20,10 @@ import {
   BackendPanel,
   CategoryPanel,
   DataManagementPanel,
+  DiagnosticLogsPanel,
 } from './settings';
 
-type SettingsTab = 'general' | 'ai' | 'webdav' | 'backup' | 'backend' | 'category' | 'data';
+type SettingsTab = 'general' | 'ai' | 'webdav' | 'backup' | 'backend' | 'category' | 'data' | 'logs';
 
 interface SettingsTabItem {
   id: SettingsTab;
@@ -194,8 +196,12 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
   isModal = false 
 }) => {
   const { language, setCurrentView } = useAppStore();
-  const [activeTab, setActiveTab] = useState<SettingsTab>('general');
-  const [displayTab, setDisplayTab] = useState<SettingsTab>('general');
+  const [activeTab, setActiveTab] = useState<SettingsTab>(() =>
+    sessionStorage.getItem('gsm:pending-settings-tab') === 'logs' ? 'logs' : 'general'
+  );
+  const [displayTab, setDisplayTab] = useState<SettingsTab>(() =>
+    sessionStorage.getItem('gsm:pending-settings-tab') === 'logs' ? 'logs' : 'general'
+  );
   const [isTransitioning, setIsTransitioning] = useState(false);
   const tabChangeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const tabResetTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -233,6 +239,22 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
       }, 120);
     }, 100);
   }, [activeTab, isTransitioning]);
+
+  useEffect(() => {
+    if (sessionStorage.getItem('gsm:pending-settings-tab') === 'logs') {
+      sessionStorage.removeItem('gsm:pending-settings-tab');
+    }
+
+    const handleNavigate = (event: Event) => {
+      const tab = (event as CustomEvent<{ tab?: SettingsTab }>).detail?.tab;
+      if (tab) {
+        handleTabChange(tab);
+      }
+    };
+
+    window.addEventListener('gsm:navigate-to-settings-tab', handleNavigate);
+    return () => window.removeEventListener('gsm:navigate-to-settings-tab', handleNavigate);
+  }, [handleTabChange]);
 
   // 清理定时器
   useEffect(() => {
@@ -282,6 +304,11 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
       label: t('数据管理', 'Data Management'),
       icon: <Trash2 className="w-5 h-5" />,
     },
+    {
+      id: 'logs',
+      label: t('诊断日志', 'Logs'),
+      icon: <ScrollText className="w-5 h-5" />,
+    },
   ];
 
   const renderTabContent = () => {
@@ -301,6 +328,8 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
           return <CategoryPanel t={t} />;
         case 'data':
           return <DataManagementPanel t={t} />;
+        case 'logs':
+          return <DiagnosticLogsPanel t={t} />;
         default:
           return null;
       }
