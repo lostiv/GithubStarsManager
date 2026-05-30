@@ -42,9 +42,10 @@ interface MobileTabNavProps {
   tabs: SettingsTabItem[];
   activeTab: SettingsTab;
   onTabChange: (tab: SettingsTab) => void;
+  idPrefix: string;
 }
 
-const MobileTabNav: React.FC<MobileTabNavProps> = ({ tabs, activeTab, onTabChange }) => {
+const MobileTabNav: React.FC<MobileTabNavProps> = ({ tabs, activeTab, onTabChange, idPrefix }) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const tabRefs = useRef<Map<SettingsTab, HTMLButtonElement>>(new Map());
   const [indicatorStyle, setIndicatorStyle] = useState({ translateX: 0, width: 0 });
@@ -152,7 +153,7 @@ const MobileTabNav: React.FC<MobileTabNavProps> = ({ tabs, activeTab, onTabChang
             }}
             onClick={() => onTabChange(tab.id)}
             role="tab"
-            id={`settings-tab-${tab.id}`}
+            id={`${idPrefix}-tab-${tab.id}`}
             aria-selected={activeTab === tab.id}
             aria-controls={`settings-tabpanel-${tab.id}`}
             className={`
@@ -312,6 +313,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
   ];
 
   const renderTabContent = () => {
+    const activeTabLabel = tabs.find((tab) => tab.id === displayTab)?.label ?? displayTab;
     const content = (() => {
       switch (displayTab) {
         case 'general':
@@ -339,7 +341,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
       <div
         role="tabpanel"
         id={`settings-tabpanel-${displayTab}`}
-        aria-labelledby={`settings-tab-${displayTab}`}
+        aria-label={`${activeTabLabel} settings panel`}
         className={`
           transition-all duration-100 ease-out
           ${isTransitioning ? 'opacity-0 translate-y-1' : 'opacity-100 translate-y-0'}
@@ -387,7 +389,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                     key={tab.id}
                     onClick={() => handleTabChange(tab.id)}
                     role="tab"
-                    id={`settings-tab-${tab.id}`}
+                    id={`modal-desktop-settings-tab-${tab.id}`}
                     aria-selected={activeTab === tab.id}
                     aria-controls={`settings-tabpanel-${tab.id}`}
                     className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors text-left ${
@@ -409,6 +411,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                 tabs={tabs}
                 activeTab={activeTab}
                 onTabChange={handleTabChange}
+                idPrefix="modal-mobile-settings"
               />
             </div>
 
@@ -444,7 +447,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                   key={tab.id}
                   onClick={() => handleTabChange(tab.id)}
                   role="tab"
-                  id={`settings-tab-${tab.id}`}
+                  id={`page-desktop-settings-tab-${tab.id}`}
                   aria-selected={activeTab === tab.id}
                   aria-controls={`settings-tabpanel-${tab.id}`}
                   className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-150 text-left ${
@@ -467,6 +470,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
             tabs={tabs}
             activeTab={activeTab}
             onTabChange={handleTabChange}
+            idPrefix="page-mobile-settings"
           />
         </div>
 

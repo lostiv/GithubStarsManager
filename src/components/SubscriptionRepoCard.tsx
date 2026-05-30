@@ -271,6 +271,7 @@ export const SubscriptionRepoCard: React.FC<SubscriptionRepoCardProps> = ({ repo
                   ai_platforms: updated.ai_platforms,
                   analyzed_at: updated.analyzed_at,
                   analysis_failed: updated.analysis_failed || false,
+                  analysis_error: updated.analysis_failed ? updated.analysis_error : undefined,
                 };
                 updateDiscoveryRepo(updatedRepo);
                 if (onAnalyze) {
@@ -288,6 +289,7 @@ export const SubscriptionRepoCard: React.FC<SubscriptionRepoCardProps> = ({ repo
           ...repo,
           analyzed_at: new Date().toISOString(),
           analysis_failed: true,
+          analysis_error: err instanceof Error ? err.message : undefined,
         };
         updateDiscoveryRepo(failedRepo);
         toast(t('AI分析启动失败，请检查后端连接和AI配置。', 'AI analysis failed to start. Please check backend connection and AI configuration.'), 'error');

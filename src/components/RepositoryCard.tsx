@@ -764,6 +764,9 @@ const RepositoryCardComponent: React.FC<RepositoryCardProps> = ({
     const exitingClasses = isExitingSelection && isSelected ? 'animate-selection-exit' : '';
     return `${baseClasses} ${selectedClasses} ${exitingClasses}`.trim();
   }, [isSelected, isExitingSelection]);
+  const descriptionTooltipId = `repo-description-tooltip-${repoId}`;
+  const analysisErrorMessage = repository.analysis_error || (language === 'zh' ? 'AI分析失败，请检查AI配置和网络连接' : 'AI analysis failed, please check AI configuration and network connection');
+  const analysisErrorTooltipId = `repo-analysis-error-${repoId}`;
 
   return (
     <div
@@ -918,6 +921,7 @@ const RepositoryCardComponent: React.FC<RepositoryCardProps> = ({
           onBlur={() => { tooltipHideTimerRef.current = setTimeout(() => setShowTooltip(false), 150); }}
           onTouchStart={() => setShowTooltip((v) => !v)}
           tabIndex={0}
+          aria-describedby={showTooltip ? descriptionTooltipId : undefined}
         >
           <p
             className="text-gray-800 dark:text-text-secondary text-[13px] leading-[1.625] line-clamp-3 mb-2 transition-colors duration-200 hover:text-gray-900 dark:hover:text-text-primary rounded px-1 -mx-1 hover:bg-gray-50/50 dark:hover:bg-white/[0.02]"
@@ -928,6 +932,7 @@ const RepositoryCardComponent: React.FC<RepositoryCardProps> = ({
             content={highlightSearchTerm(displayContent.content, searchQuery)}
             visible={showTooltip}
             triggerRef={descTriggerRef}
+            id={descriptionTooltipId}
             onMouseEnter={() => clearTimeout(tooltipHideTimerRef.current)}
             onMouseLeave={() => { tooltipHideTimerRef.current = setTimeout(() => setShowTooltip(false), 150); }}
           />
@@ -947,11 +952,24 @@ const RepositoryCardComponent: React.FC<RepositoryCardProps> = ({
             <div className="flex items-center space-x-1 text-xs text-status-red dark:text-status-red" title={language === 'zh' ? 'AI分析失败，点击AI按钮重新分析' : 'AI analysis failed, click AI button to retry'}>
               <Bot className="w-3 h-3" />
               <span>{language === 'zh' ? '分析失败' : 'Failed'}</span>
-              <div className="group relative">
-                <HelpCircle className="w-3 h-3 text-status-red/70 dark:text-status-red/70 cursor-help" />
-                <div className="absolute left-0 top-full mt-2 w-72 max-w-xs p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white text-xs rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-[9999] whitespace-normal break-words">
+              <div className="group relative inline-flex">
+                <button
+                  type="button"
+                  onClick={(event) => event.stopPropagation()}
+                  onKeyDown={(event) => event.stopPropagation()}
+                  className="inline-flex rounded-full text-status-red/70 dark:text-status-red/70 cursor-help focus:outline-none focus:ring-2 focus:ring-status-red/40"
+                  aria-label={`${language === 'zh' ? 'AI分析失败' : 'AI analysis error'}: ${analysisErrorMessage}`}
+                  aria-describedby={analysisErrorTooltipId}
+                >
+                  <HelpCircle className="w-3 h-3" />
+                </button>
+                <div
+                  id={analysisErrorTooltipId}
+                  role="tooltip"
+                  className="absolute left-0 top-full mt-2 w-72 max-w-xs p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white text-xs rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible group-focus-within:opacity-100 group-focus-within:visible transition-all z-[9999] whitespace-normal break-words"
+                >
                   <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-                    {repository.analysis_error || (language === 'zh' ? 'AI分析失败，请检查AI配置和网络连接' : 'AI analysis failed, please check AI configuration and network connection')}
+                    {analysisErrorMessage}
                   </p>
                   <div className="absolute top-[-4px] left-3 w-2 h-2 bg-white dark:bg-gray-800 border-l border-t border-gray-200 dark:border-gray-700 transform rotate-45"></div>
                 </div>

@@ -1,4 +1,4 @@
-import React, { useLayoutEffect, useRef, useCallback } from 'react';
+import React, { useId, useLayoutEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 
 interface FloatingTooltipProps {
@@ -7,6 +7,7 @@ interface FloatingTooltipProps {
   triggerRef: React.RefObject<HTMLElement | null>;
   onMouseLeave: () => void;
   onMouseEnter?: () => void;
+  id?: string;
 }
 
 export const FloatingTooltip: React.FC<FloatingTooltipProps> = ({
@@ -15,7 +16,10 @@ export const FloatingTooltip: React.FC<FloatingTooltipProps> = ({
   triggerRef,
   onMouseLeave,
   onMouseEnter,
+  id,
 }) => {
+  const generatedId = useId();
+  const tooltipId = id ?? generatedId;
   const tooltipRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef<number>(0);
 
@@ -65,7 +69,10 @@ export const FloatingTooltip: React.FC<FloatingTooltipProps> = ({
 
   return createPortal(
     <div
+      id={tooltipId}
       ref={tooltipRef}
+      role="tooltip"
+      aria-hidden={!visible}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
       className="fixed z-[9999] p-4 bg-white dark:bg-surface-3 text-gray-900 dark:text-text-primary text-[13px] leading-[1.625] rounded-xl shadow-dialog border border-gray-200/80 dark:border-white/[0.04] animate-fade-in max-h-[280px] overflow-y-auto scrollbar-auto"

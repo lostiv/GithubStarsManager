@@ -833,6 +833,7 @@ export const DiscoveryView: React.FC = React.memo(() => {
                     category_locked: wasCategoryLocked,
                     analyzed_at: updated.analyzed_at,
                     analysis_failed: updated.analysis_failed || false,
+                    analysis_error: updated.analysis_failed ? updated.analysis_error : undefined,
                   });
                   discoveryAnalysisStorage.saveAnalysis(dRepo.id, {
                     ai_summary: updated.ai_summary,
@@ -840,6 +841,7 @@ export const DiscoveryView: React.FC = React.memo(() => {
                     ai_platforms: updated.ai_platforms,
                     analyzed_at: updated.analyzed_at,
                     analysis_failed: updated.analysis_failed || false,
+                    analysis_error: updated.analysis_failed ? updated.analysis_error : undefined,
                   });
                 }
               }

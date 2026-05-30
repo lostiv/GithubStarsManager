@@ -28,9 +28,20 @@ const SENSITIVE_URL_PARAMS = [
   'auth',
 ];
 
-const GITHUB_TOKEN_RE = /^ghp_[a-zA-Z0-9]{36}$/;
-const GENERIC_SECRET_RE = /^[a-zA-Z0-9+/=_-]{20,}$/;
-const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+const SENSITIVE_HEADER_NAMES = new Set([
+  'authorization',
+  'proxy-authorization',
+  'x-api-key',
+  'cookie',
+  'set-cookie',
+]);
+
+const GITHUB_TOKEN_RE = /\bgh[pousr]_[a-zA-Z0-9_]{20,}\b/g;
+const GENERIC_SECRET_RE = /\b(?=[a-zA-Z0-9+/=_-]{24,}\b)(?=[a-zA-Z0-9+/=_-]*\d)[a-zA-Z0-9+/=_-]{24,}\b/g;
+const EMAIL_RE = /\b[^@\s]+@[^@\s]+\.[^@\s]+\b/g;
+const URL_RE = /https?:\/\/[^\s"'<>\\]+/gi;
+const BEARER_RE = /\b(Bearer)\s+([a-zA-Z0-9._~+/=-]+)/gi;
+const BASIC_RE = /\b(Basic)\s+([a-zA-Z0-9+/=-]+)/gi;
 
 export function maskSecret(value: string): string {
   if (!value || value.length <= 4) return '****';
@@ -76,17 +87,13 @@ export function sanitizeForLog(input: unknown, seen: WeakSet<object> = new WeakS
 }
 
 function sanitizeString(value: string): string {
-  if (GITHUB_TOKEN_RE.test(value)) return maskSecret(value);
-  if (value.length >= 20 && GENERIC_SECRET_RE.test(value)) return maskSecret(value);
-  if (EMAIL_RE.test(value)) return maskEmail(value);
-  if (value.startsWith('http://') || value.startsWith('https://')) return redactUrl(value);
-  if (value.startsWith('Bearer ') || value.startsWith('bearer ')) {
-    return `${value.slice(0, 7)}${maskSecret(value.slice(7))}`;
-  }
-  if (value.startsWith('Basic ') || value.startsWith('basic ')) {
-    return `${value.slice(0, 6)}***`;
-  }
-  return value;
+  return value
+    .replace(BEARER_RE, (_match, scheme: string, token: string) => `${scheme} ${maskSecret(token)}`)
+    .replace(BASIC_RE, (_match, scheme: string) => `${scheme} ***`)
+    .replace(URL_RE, (url) => redactUrl(url))
+    .replace(GITHUB_TOKEN_RE, (token) => maskSecret(token))
+    .replace(GENERIC_SECRET_RE, (secret) => maskSecret(secret))
+    .replace(EMAIL_RE, (email) => maskEmail(email));
 }
 
 function sanitizeObject(obj: Record<string, unknown>, seen: WeakSet<object>): Record<string, unknown> {
@@ -121,7 +128,7 @@ function sanitizeHeaders(headers: Record<string, unknown>, seen: WeakSet<object>
   const result: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(headers)) {
     const lowerKey = key.toLowerCase();
-    result[key] = lowerKey === 'authorization' || lowerKey === 'x-api-key'
+    result[key] = SENSITIVE_HEADER_NAMES.has(lowerKey) || lowerKey.includes('session') || lowerKey.includes('csrf')
       ? typeof value === 'string' ? sanitizeString(value) : '****'
       : sanitizeForLog(value, seen);
   }

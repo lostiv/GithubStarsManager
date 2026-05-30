@@ -23,13 +23,18 @@ import { startBackupScheduler, stopBackupScheduler } from './services/backupServ
 import { startAutoSyncScheduler, stopAutoSyncScheduler } from './services/autoSyncService.js';
 import { logger, morganLoggerStream } from './services/logger.js';
 
+morgan.token('safe-url', (req) => {
+  const expressReq = req as express.Request;
+  return expressReq.path || req.url?.split('?')[0] || '-';
+});
+
 export function createApp(): express.Express {
   const app = express();
 
   // Middleware
   app.use(helmet());
   app.use(cors());
-  app.use(morgan('combined', { stream: morganLoggerStream }));
+  app.use(morgan(':remote-addr - :remote-user [:date[clf]] ":method :safe-url HTTP/:http-version" :status :res[content-length] ":referrer" ":user-agent"', { stream: morganLoggerStream }));
   app.use(express.json({ limit: '50mb' }));
 
   // Auth middleware for all /api/* except /api/health

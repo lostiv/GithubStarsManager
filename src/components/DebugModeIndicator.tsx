@@ -29,7 +29,7 @@ export const DebugModeIndicator: React.FC = () => {
 
     if (backend.isAvailable) {
       try {
-        await fetch(`${backend.backendUrl}/logs/debug`, {
+        const response = await fetch(`${backend.backendUrl}/logs/debug`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -37,13 +37,20 @@ export const DebugModeIndicator: React.FC = () => {
           },
           body: JSON.stringify({ enabled: false }),
         });
+        if (!response.ok) {
+          throw new Error(`Disable backend debug failed: ${response.status}`);
+        }
+
+        sessionStorage.setItem('gsm:backend-debug', 'false');
+        setBackendDebug(false);
       } catch (err) {
         logger.errorFromError('debugIndicator', 'Failed to disable backend debug mode', err);
       }
+    } else {
+      sessionStorage.setItem('gsm:backend-debug', 'false');
+      setBackendDebug(false);
     }
 
-    sessionStorage.setItem('gsm:backend-debug', 'false');
-    setBackendDebug(false);
     sessionStorage.setItem('gsm:pending-settings-tab', 'logs');
     setCurrentView('settings');
     window.dispatchEvent(new CustomEvent('gsm:navigate-to-settings-tab', { detail: { tab: 'logs' } }));

@@ -7,6 +7,7 @@ import { backend } from '../../services/backendAdapter';
 import { buildFinalApiUrl } from '../../utils/apiUrlBuilder';
 import { SliderInput } from '../ui/SliderInput';
 import { useDialog } from '../../hooks/useDialog';
+import { VALID_PLATFORMS_JSON } from '../../constants/platforms';
 
 interface AIConfigPanelProps {
   t: (zh: string, en: string) => string;
@@ -245,6 +246,7 @@ export const AIConfigPanel: React.FC<AIConfigPanelProps> = ({ t }) => {
   };
 
   const defaultPrompt = useMemo(() => {
+    const platformList = VALID_PLATFORMS_JSON;
     if (language === 'zh') {
       return `请分析以下GitHub仓库信息，并只输出合法JSON对象。不要输出思考过程、Markdown、代码块标记、解释或任何额外文本。
 
@@ -252,7 +254,7 @@ export const AIConfigPanel: React.FC<AIConfigPanelProps> = ({ t }) => {
 - summary：中文概述，说明仓库的主要功能和用途，不超过50字。
 - tags：3-5个中文应用类型标签，请优先从提供的分类中选择。
 {CATEGORIES_INFO}
-- platforms：只能从 ["mac","windows","linux","ios","android","docker","web","cli"] 中选择；无法判断则为 []。
+- platforms：只能从 ${platformList} 中选择；无法判断则为 []。
 
 输出格式：
 {
@@ -273,7 +275,7 @@ Requirements:
 - summary: A concise English overview explaining the main functionality and purpose, no more than 50 words.
 - tags: 3-5 English application type tags, please prioritize from the provided categories.
 {CATEGORIES_INFO}
-- platforms: Must only choose from ["mac","windows","linux","ios","android","docker","web","cli"]; use [] if unable to determine.
+- platforms: Must only choose from ${platformList}; use [] if unable to determine.
 
 Output format:
 {

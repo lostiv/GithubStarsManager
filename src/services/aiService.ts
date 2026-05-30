@@ -1,6 +1,7 @@
 import { Repository, AIConfig, AIApiType } from '../types';
 import { backend } from './backendAdapter';
 import { buildApiUrl, buildFinalApiUrl } from '../utils/apiUrlBuilder';
+import { VALID_PLATFORMS, VALID_PLATFORMS_JSON } from '../constants/platforms';
 
 interface OpenAIResponseContentPart {
   text?: string;
@@ -329,6 +330,7 @@ ${readmeContent.substring(0, 2000)}
   }
 
   private createAnalysisPrompt(repository: Repository, readmeContent: string, customCategories?: string[]): string {
+    const platformList = VALID_PLATFORMS_JSON;
     const repoInfo = `
 ${this.language === 'zh' ? '仓库名称' : 'Repository Name'}: ${repository.full_name}
 ${this.language === 'zh' ? '描述' : 'Description'}: ${repository.description || (this.language === 'zh' ? '无描述' : 'No description')}
@@ -350,7 +352,7 @@ ${readmeContent.substring(0, 2000)}
 要求：
 - summary：中文概述，说明仓库的主要功能和用途，不超过50字。
 - tags：3-5个中文应用类型标签${customCategories && customCategories.length > 0 ? '，请优先从上方的可用分类中选择' : '，类似应用商店的分类，如：开发工具、Web应用、移动应用、数据库、AI工具等'}。${categoriesLine}
-- platforms：只能从 ["mac","windows","linux","ios","android","docker","web","cli"] 中选择；无法判断则为 []。
+- platforms：只能从 ${platformList} 中选择；无法判断则为 []。
 
 输出格式：
 {
@@ -375,7 +377,7 @@ Please analyze the following GitHub repository information and only output a val
 Requirements:
 - summary: A concise English overview explaining the main functionality and purpose, no more than 50 words.
 - tags: 3-5 English application type tags${customCategories && customCategories.length > 0 ? ', please prioritize from the available categories above' : ', similar to app store categories such as: development tools, web apps, mobile apps, database, AI tools, etc.'}.${categoriesLine}
-- platforms: Must only choose from ["mac","windows","linux","ios","android","docker","web","cli"]; use [] if unable to determine.
+- platforms: Must only choose from ${platformList}; use [] if unable to determine.
 
 Output format:
 {
@@ -392,8 +394,6 @@ ${repoInfo}
       `.trim();
     }
   }
-
-  private static readonly VALID_PLATFORMS = ['mac', 'windows', 'linux', 'ios', 'android', 'docker', 'web', 'cli'];
 
   private parseAIResponse(content: string): { summary: string; tags: string[]; platforms: string[] } {
     try {
@@ -416,7 +416,7 @@ ${repoInfo}
                   parsed.platforms
                     .filter((v): v is string => typeof v === 'string')
                     .map((v) => v.trim().toLowerCase())
-                    .filter((v) => AIService.VALID_PLATFORMS.includes(v))
+                    .filter((v) => (VALID_PLATFORMS as readonly string[]).includes(v))
                 )
               ).slice(0, 8)
             : [],

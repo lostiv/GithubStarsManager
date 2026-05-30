@@ -71,13 +71,19 @@ class Logger {
   }
 
   getEntries(filter?: { level?: LogLevel; since?: string; limit?: number }): LogEntry[] {
-    let entries = this.buffer;
+    let entries = this.buffer.slice();
     if (filter?.level) {
       const minOrder = LEVEL_ORDER[filter.level];
       entries = entries.filter((entry) => LEVEL_ORDER[entry.level] >= minOrder);
     }
     if (filter?.since) {
-      entries = entries.filter((entry) => entry.timestamp >= filter.since!);
+      const sinceTime = Date.parse(filter.since);
+      if (!Number.isNaN(sinceTime)) {
+        entries = entries.filter((entry) => {
+          const entryTime = Date.parse(entry.timestamp);
+          return !Number.isNaN(entryTime) && entryTime >= sinceTime;
+        });
+      }
     }
     if (filter?.limit && filter.limit > 0) {
       entries = entries.slice(-filter.limit);

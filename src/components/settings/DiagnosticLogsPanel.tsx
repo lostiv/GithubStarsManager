@@ -52,6 +52,25 @@ function getStatusColor(status: unknown): string {
   return '';
 }
 
+type WrappedResponse<T> = { data?: T; debugMode?: boolean; success?: boolean };
+
+function resolveLogsResponse(raw: unknown): LogEntry[] {
+  if (Array.isArray(raw)) return raw as LogEntry[];
+  if (raw && typeof raw === 'object' && Array.isArray((raw as WrappedResponse<LogEntry[]>).data)) {
+    return (raw as WrappedResponse<LogEntry[]>).data as LogEntry[];
+  }
+  return [];
+}
+
+function resolveDebugModeResponse(raw: unknown): boolean {
+  if (!raw || typeof raw !== 'object') return false;
+  const response = raw as WrappedResponse<{ debugMode?: boolean }>;
+  if (response.data && typeof response.data === 'object') {
+    return response.data.debugMode === true;
+  }
+  return response.debugMode === true;
+}
+
 export const DiagnosticLogsPanel: React.FC<DiagnosticLogsPanelProps> = ({ t }) => {
   const language = useAppStore((state) => state.language);
   const backendApiSecret = useAppStore((state) => state.backendApiSecret);
@@ -109,8 +128,8 @@ export const DiagnosticLogsPanel: React.FC<DiagnosticLogsPanelProps> = ({ t }) =
       if (!response.ok) {
         throw new Error(`Fetch logs failed: ${response.status}`);
       }
-      const raw = await response.json();
-      const logs = Array.isArray(raw) ? raw as LogEntry[] : [];
+      const raw = await response.json() as unknown;
+      const logs = resolveLogsResponse(raw);
       setBackendEntries(logs);
       const totalHeader = response.headers.get('X-Log-Count');
       setBackendLogCount(totalHeader ? parseInt(totalHeader, 10) || logs.length : logs.length);
@@ -149,9 +168,10 @@ export const DiagnosticLogsPanel: React.FC<DiagnosticLogsPanelProps> = ({ t }) =
           headers: getAuthHeaders(),
         });
         if (!response.ok) return;
-        const data = await response.json() as { debugMode?: boolean };
-        setBackendDebug(data.debugMode === true);
-        sessionStorage.setItem('gsm:backend-debug', String(data.debugMode === true));
+        const raw = await response.json() as unknown;
+        const debugMode = resolveDebugModeResponse(raw);
+        setBackendDebug(debugMode);
+        sessionStorage.setItem('gsm:backend-debug', String(debugMode));
       } catch {
         setBackendDebug(false);
       }
@@ -235,10 +255,11 @@ export const DiagnosticLogsPanel: React.FC<DiagnosticLogsPanelProps> = ({ t }) =
       if (!response.ok) {
         throw new Error(`Toggle backend debug failed: ${response.status}`);
       }
-      const data = await response.json() as { debugMode?: boolean };
-      setBackendDebug(data.debugMode === true);
-      sessionStorage.setItem('gsm:backend-debug', String(data.debugMode === true));
-      if (data.debugMode) {
+      const raw = await response.json() as unknown;
+      const debugMode = resolveDebugModeResponse(raw);
+      setBackendDebug(debugMode);
+      sessionStorage.setItem('gsm:backend-debug', String(debugMode));
+      if (debugMode) {
         setSelectedLevels((previous) => new Set([...previous, 'debug']));
       }
       await refreshBackendLogs();
@@ -367,6 +388,7 @@ export const DiagnosticLogsPanel: React.FC<DiagnosticLogsPanelProps> = ({ t }) =
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
             placeholder={t('搜索模块或消息...', 'Search module or message...')}
+            aria-label={t('搜索日志', 'Search logs')}
             className="w-full pl-10 pr-4 py-2 rounded-lg border border-black/[0.06] dark:border-white/[0.04] bg-light-surface dark:bg-white/[0.04] text-gray-900 dark:text-text-primary text-sm focus:outline-none focus:ring-2 focus:ring-brand-violet"
           />
         </div>
@@ -424,15 +446,19 @@ export const DiagnosticLogsPanel: React.FC<DiagnosticLogsPanelProps> = ({ t }) =
 
           <div className="flex items-center gap-2 ml-auto">
             <button
+              type="button"
               onClick={() => void refreshBackendLogs()}
               disabled={!backendAvailable || isRefreshing}
+              aria-label={t('刷新日志', 'Refresh logs')}
               className="p-2 rounded-lg text-gray-600 dark:text-text-secondary hover:bg-gray-100 dark:hover:bg-white/[0.06] transition-colors disabled:opacity-50"
               title={t('刷新', 'Refresh')}
             >
               <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
             </button>
             <button
+              type="button"
               onClick={() => void handleClear()}
+              aria-label={t('清空日志', 'Clear logs')}
               className="p-2 rounded-lg text-gray-600 dark:text-text-secondary hover:bg-gray-100 dark:hover:bg-white/[0.06] transition-colors"
               title={t('清空', 'Clear')}
             >

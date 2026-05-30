@@ -96,10 +96,11 @@ class BackendAdapter {
       });
       return response;
     } catch (err) {
-      logger.errorFromError('backendAdapter', 'Backend request failed', err, {
+      logger.warn('backendAdapter', 'Backend request attempt failed', {
         method,
         url,
         durationMs: Math.round(performance.now() - startedAt),
+        error: err instanceof Error ? err.message : String(err),
       });
       throw err;
     } finally {
@@ -131,7 +132,15 @@ class BackendAdapter {
           (lastError as { cause?: { code?: string } }).cause?.code === 'UND_ERR_SOCKET' ||
           (lastError as { cause?: { code?: string } }).cause?.code === 'UND_ERR_CONNECT_TIMEOUT' ||
           (lastError as { cause?: { code?: string } }).cause?.code === 'UND_ERR_HEADERS_TIMEOUT';
-        if (!isRetryable || attempt === maxRetries) throw lastError;
+        if (!isRetryable || attempt === maxRetries) {
+          logger.errorFromError('backendAdapter', 'Backend request failed after retries', lastError, {
+            attempt: attempt + 1,
+            maxAttempts: maxRetries + 1,
+            url,
+            method: options?.method ?? 'GET',
+          });
+          throw lastError;
+        }
         // Exponential backoff: 1s, 2s, 4s
         const delay = Math.min(1000 * Math.pow(2, attempt), 4000);
         logger.warn('backendAdapter', 'Retrying backend request after transient failure', {
