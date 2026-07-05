@@ -526,16 +526,24 @@ export const Header: React.FC = () => {
             {/* User Profile */}
             {user && (
               <div className="flex items-center space-x-2 sm:space-x-3">
-                <img
-                  src={user.avatar_url}
-                  alt={user.name || user.login}
-                  className="w-8 h-8 rounded-full"
-                />
-                <div className="min-w-0 hidden sm:block">
-                  <p className="truncate text-sm font-medium text-gray-900 dark:text-text-primary">
-                    {user.name || user.login}
-                  </p>
-                </div>
+                <a
+                  href={`https://github.com/${user.login}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center space-x-2 sm:space-x-3 hover:opacity-80 transition-opacity"
+                  title={user.login}
+                >
+                  <img
+                    src={user.avatar_url}
+                    alt={user.name || user.login}
+                    className="w-8 h-8 rounded-full"
+                  />
+                  <div className="min-w-0 hidden sm:block">
+                    <p className="truncate text-sm font-medium text-gray-900 dark:text-text-primary">
+                      {user.name || user.login}
+                    </p>
+                  </div>
+                </a>
                 <button
                   onClick={async () => {
                     const confirmed = await confirm(
