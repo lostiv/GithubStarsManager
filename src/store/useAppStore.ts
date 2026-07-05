@@ -23,7 +23,10 @@ import {
   TrendingTimeRange,
   TopicCategory,
   SubscriptionChannel,
-  defaultSubscriptionChannels
+  defaultSubscriptionChannels,
+  ProxyConfig,
+  EmbeddingConfig,
+  VectorSearchConfig
 } from '../types';
 import { indexedDBStorage } from '../services/indexedDbStorage';
 import { PRESET_FILTERS } from '../constants/presetFilters';
@@ -98,7 +101,17 @@ interface AppActions {
   deleteAIConfig: (id: string) => void;
   setActiveAIConfig: (id: string | null) => void;
   setAIConfigs: (configs: AIConfig[]) => void;
-  
+
+  // Embedding actions
+  addEmbeddingConfig: (config: EmbeddingConfig) => void;
+  updateEmbeddingConfig: (id: string, updates: Partial<EmbeddingConfig>) => void;
+  deleteEmbeddingConfig: (id: string) => void;
+  setActiveEmbeddingConfig: (id: string | null) => void;
+  setEmbeddingConfigs: (configs: EmbeddingConfig[]) => void;
+
+  // Vector Search actions
+  setVectorSearchConfig: (config: VectorSearchConfig) => void;
+
   // WebDAV actions
   addWebDAVConfig: (config: WebDAVConfig) => void;
   updateWebDAVConfig: (id: string, updates: Partial<WebDAVConfig>) => void;
@@ -167,6 +180,9 @@ interface AppActions {
   // Backend actions
   setBackendApiSecret: (secret: string | null) => void;
 
+  // Network Proxy actions
+  setProxyConfig: (config: ProxyConfig) => void;
+
   // Release Timeline View actions
   setReleaseViewMode: (mode: 'timeline' | 'repository') => void;
   setReleaseSelectedFilters: (filters: string[]) => void;
@@ -177,6 +193,9 @@ interface AppActions {
   setReleaseExpandedRepositories: (repoIds: Set<number>) => void;
   setReleaseIsRefreshing: (refreshing: boolean) => void;
   setIncludePreRelease: (include: boolean) => void;
+
+  // Backup/Export key inclusion preference
+  setIncludeKeysInBackup: (include: boolean) => void;
 
   // Fork Timeline View actions
   setForkViewMode: (mode: 'timeline' | 'repository') => void;
@@ -260,6 +279,7 @@ type PersistedAppState = Partial<
     | 'releaseSelectedFilters'
     | 'releaseSearchQuery'
     | 'includePreRelease'
+    | 'includeKeysInBackup'
     | 'discoveryChannels'
     | 'discoveryRepos'
     | 'discoveryLastRefresh'
@@ -275,6 +295,10 @@ type PersistedAppState = Partial<
     | 'subscriptionLastRefresh'
     | 'subscriptionIsLoading'
     | 'subscriptionChannels'
+    | 'proxyConfig'
+    | 'embeddingConfigs'
+    | 'activeEmbeddingConfig'
+    | 'vectorSearchConfig'
   >
 > & {
   releaseSubscriptions?: unknown;
@@ -709,6 +733,9 @@ export const useAppStore = create<AppState & AppActions>()(
       analyzingRepositoryIds: new Set<number>(),
       aiConfigs: [],
       activeAIConfig: null,
+      embeddingConfigs: [],
+      activeEmbeddingConfig: null,
+      vectorSearchConfig: { enabled: false, workerUrl: '', authToken: '', embeddingConfigId: '' },
       webdavConfigs: [],
       activeWebDAVConfig: null,
       lastBackup: null,
@@ -731,6 +758,7 @@ export const useAppStore = create<AppState & AppActions>()(
       updateNotification: null,
       analysisProgress: { current: 0, total: 0 },
       backendApiSecret: readSessionBackendSecret(),
+      proxyConfig: { enabled: false, type: 'http', host: '', port: 8080 },
       isSidebarCollapsed: false,
       readmeModalOpen: false,
       releaseViewMode: 'timeline',
@@ -739,6 +767,7 @@ export const useAppStore = create<AppState & AppActions>()(
       releaseExpandedRepositories: new Set<number>(),
       releaseIsRefreshing: false,
       includePreRelease: true,
+      includeKeysInBackup: false,
 
       forks: [],
       readForks: new Set<number>(),
@@ -916,6 +945,30 @@ export const useAppStore = create<AppState & AppActions>()(
       setAIConfigs: (aiConfigs) => set((state) => ({
         aiConfigs: aiConfigs.map(c => ({ ...c, isActive: c.id === state.activeAIConfig })),
       })),
+
+      // Embedding actions
+      addEmbeddingConfig: (config) => set((state) => ({
+        embeddingConfigs: [...state.embeddingConfigs, config]
+      })),
+      updateEmbeddingConfig: (id, updates) => set((state) => ({
+        embeddingConfigs: state.embeddingConfigs.map(config =>
+          config.id === id ? { ...config, ...updates } : config
+        )
+      })),
+      deleteEmbeddingConfig: (id) => set((state) => ({
+        embeddingConfigs: state.embeddingConfigs.filter(config => config.id !== id),
+        activeEmbeddingConfig: state.activeEmbeddingConfig === id ? null : state.activeEmbeddingConfig
+      })),
+      setActiveEmbeddingConfig: (activeEmbeddingConfig) => set((state) => ({
+        embeddingConfigs: state.embeddingConfigs.map(c => ({ ...c, isActive: c.id === activeEmbeddingConfig })),
+        activeEmbeddingConfig
+      })),
+      setEmbeddingConfigs: (embeddingConfigs) => set((state) => ({
+        embeddingConfigs: embeddingConfigs.map(c => ({ ...c, isActive: c.id === state.activeEmbeddingConfig })),
+      })),
+
+      // Vector Search actions
+      setVectorSearchConfig: (vectorSearchConfig) => set({ vectorSearchConfig }),
 
       // WebDAV actions
       addWebDAVConfig: (config) => set((state) => ({
@@ -1296,6 +1349,7 @@ export const useAppStore = create<AppState & AppActions>()(
         writeSessionBackendSecret(backendApiSecret);
         set({ backendApiSecret });
       },
+      setProxyConfig: (proxyConfig) => set({ proxyConfig }),
 
       // Release Timeline View actions
       setReleaseViewMode: (releaseViewMode) => set({ releaseViewMode }),
@@ -1319,6 +1373,7 @@ export const useAppStore = create<AppState & AppActions>()(
       setReleaseExpandedRepositories: (releaseExpandedRepositories) => set({ releaseExpandedRepositories }),
       setReleaseIsRefreshing: (releaseIsRefreshing) => set({ releaseIsRefreshing }),
       setIncludePreRelease: (includePreRelease) => set({ includePreRelease }),
+      setIncludeKeysInBackup: (includeKeysInBackup) => set({ includeKeysInBackup }),
 
       // Fork actions
       setForks: (forks) => set({ forks }),
@@ -1518,6 +1573,10 @@ export const useAppStore = create<AppState & AppActions>()(
         releaseSearchQuery: state.releaseSearchQuery,
         releaseExpandedRepositories: Array.from(state.releaseExpandedRepositories),
         includePreRelease: state.includePreRelease,
+        includeKeysInBackup: state.includeKeysInBackup,
+        embeddingConfigs: state.embeddingConfigs,
+        activeEmbeddingConfig: state.activeEmbeddingConfig,
+        vectorSearchConfig: state.vectorSearchConfig,
 
         // 持久化Fork页面视图设置
         forkViewMode: state.forkViewMode,

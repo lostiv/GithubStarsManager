@@ -76,12 +76,20 @@ export class AIService {
     return effort ? { effort } : undefined;
   }
 
+  private isDeepSeekModel(): boolean {
+    return this.getApiType() === 'deepseek';
+  }
+
   private isDeepSeekReasonerModel(): boolean {
-    return this.getApiType() === 'openai' && this.config.model.trim() === 'deepseek-reasoner';
+    return this.isDeepSeekModel() && this.config.model.trim() === 'deepseek-reasoner';
+  }
+
+  private isDeepSeekThinkingModel(): boolean {
+    return this.isDeepSeekModel() && this.config.model.trim() !== 'deepseek-reasoner';
   }
 
   private isMiMoModel(): boolean {
-    return this.config.model.trim().toLowerCase().includes('mimo');
+    return this.getApiType() === 'mimo';
   }
 
   // 优先走后端代理；若后端尚未同步该配置（AI_CONFIG_NOT_FOUND），回退到直接 fetch
@@ -113,7 +121,7 @@ export class AIService {
     const apiType = this.getApiType();
     const reasoning = this.getOpenAIReasoningPayload();
 
-    if (apiType === 'openai' || apiType === 'openai-responses' || apiType === 'openai-compatible') {
+    if (apiType === 'openai' || apiType === 'openai-responses' || apiType === 'openai-compatible' || apiType === 'deepseek' || apiType === 'mimo') {
       const messages = [
         ...(options.system.trim()
           ? [{ role: 'system', content: options.system }]
@@ -121,6 +129,7 @@ export class AIService {
         { role: 'user', content: options.user },
       ];
       const isDeepSeekReasoner = this.isDeepSeekReasonerModel();
+      const isDeepSeekThinking = this.isDeepSeekThinkingModel();
       const isMiMoModel = this.isMiMoModel();
 
       const requestBody = apiType === 'openai-responses'
@@ -130,15 +139,15 @@ export class AIService {
             temperature: options.temperature,
             max_output_tokens: options.maxTokens,
             ...(reasoning ? { reasoning } : {}),
-            ...(isMiMoModel ? { thinking: { type: 'disabled' } } : {}),
+            ...(isMiMoModel || isDeepSeekThinking ? { thinking: { type: 'disabled' } } : {}),
           }
         : {
             model: this.config.model,
             messages,
             max_tokens: options.maxTokens,
             ...(!isDeepSeekReasoner ? { temperature: options.temperature } : {}),
-            ...(!isDeepSeekReasoner && reasoning && apiType !== 'openai-compatible' ? { reasoning } : {}),
-            ...(isMiMoModel ? { thinking: { type: 'disabled' } } : {}),
+            ...(!isDeepSeekReasoner && !isDeepSeekThinking && !isMiMoModel && reasoning && apiType !== 'openai-compatible' ? { reasoning } : {}),
+            ...(isMiMoModel || isDeepSeekThinking ? { thinking: { type: 'disabled' } } : {}),
           };
 
       const data = await this.proxyOrDirectFetch(requestBody, () => {
@@ -176,7 +185,13 @@ export class AIService {
         if (content) return content;
 
         const reasoningContent = message?.reasoning_content;
-        if (reasoningContent) return reasoningContent;
+        if (reasoningContent && isDeepSeekReasoner) {
+          return reasoningContent;
+        }
+
+        if (!content && reasoningContent) {
+          console.warn('Model returned reasoning_content but empty content', { model: this.config.model });
+        }
       }
 
       throw new Error('No content received from AI service');

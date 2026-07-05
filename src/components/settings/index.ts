@@ -6,3 +6,5 @@ export { CategoryPanel } from './CategoryPanel';
 export { GeneralPanel } from './GeneralPanel';
 export { DataManagementPanel } from './DataManagementPanel';
 export { DiagnosticLogsPanel } from './DiagnosticLogsPanel';
+export { NetworkPanel } from './NetworkPanel';
+export { VectorSearchSettings } from './VectorSearchSettings';

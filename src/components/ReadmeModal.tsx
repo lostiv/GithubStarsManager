@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { X, Loader2, AlertCircle, FileText, ExternalLink, List, Type, ArrowUp, Languages, Eye } from 'lucide-react';
 import BilingualMarkdownRenderer, { DisplayMode, BilingualMarkdownRendererHandle, TranslationStatus } from './BilingualMarkdownRenderer';
 import { stripMarkdownFormatting } from '../utils/markdownUtils';
@@ -6,6 +6,7 @@ import { Repository } from '../types';
 import { GitHubApiService } from '../services/githubApi';
 import { backend } from '../services/backendAdapter';
 import { useAppStore } from '../store/useAppStore';
+import { buildReadmeVariants, DEFAULT_README_VARIANT, type ReadmeVariant } from '../utils/readmeVariants';
 
 interface TocItem {
   id: string;
@@ -47,6 +48,11 @@ export const ReadmeModal: React.FC<ReadmeModalProps> = ({
   const [errorExpanded, setErrorExpanded] = useState(false);
   const [tocWidth, setTocWidth] = useState(224);
   const [translatedHeadingMap, setTranslatedHeadingMap] = useState<Map<string, string>>(new Map());
+  const [readmeVariants, setReadmeVariants] = useState<ReadmeVariant[]>(() => [{ ...DEFAULT_README_VARIANT, label: language === 'zh' ? '默认 README' : 'Default README' }]);
+  const [selectedReadmeKey, setSelectedReadmeKey] = useState('default');
+  const [readmeCache, setReadmeCache] = useState<Record<string, string>>({});
+
+  const defaultReadmeVariant = useMemo(() => ({ ...DEFAULT_README_VARIANT, label: language === 'zh' ? '默认 README' : 'Default README' }), [language]);
 
   const modalRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -284,8 +290,10 @@ export const ReadmeModal: React.FC<ReadmeModalProps> = ({
     setTranslatedHeadingMap(map);
   }, []);
 
-  const fetchReadme = useCallback(async () => {
+  const fetchReadme = useCallback(async (variant?: ReadmeVariant) => {
     if (!repository) return;
+
+    const activeVariant = variant || defaultReadmeVariant;
 
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
@@ -300,11 +308,17 @@ export const ReadmeModal: React.FC<ReadmeModalProps> = ({
       const [owner, name] = repository.full_name.split('/');
       let content = '';
 
-      if (backend.isAvailable) {
-        content = await backend.getRepositoryReadme(owner, name);
+      if (readmeCache[activeVariant.key] !== undefined) {
+        content = readmeCache[activeVariant.key];
+      } else if (backend.isAvailable) {
+        content = activeVariant.isDefault || !activeVariant.path
+          ? await backend.getRepositoryReadme(owner, name)
+          : await backend.getRepositoryReadmeByPath(owner, name, activeVariant.path);
       } else if (githubToken) {
         const githubApi = new GitHubApiService(githubToken);
-        content = await githubApi.getRepositoryReadme(owner, name, abortController.signal);
+        content = activeVariant.isDefault || !activeVariant.path
+          ? await githubApi.getRepositoryReadme(owner, name, abortController.signal)
+          : await githubApi.getRepositoryReadmeByPath(owner, name, activeVariant.path, abortController.signal);
       } else {
         setError(language === 'zh' ? '未登录且后端不可用，无法加载 README' : 'Not logged in and backend unavailable, cannot load README');
         setLoading(false);
@@ -313,27 +327,58 @@ export const ReadmeModal: React.FC<ReadmeModalProps> = ({
 
       if (abortController.signal.aborted) return;
 
+      setReadmeCache(prev => ({ ...prev, [activeVariant.key]: content }));
+
       if (content.trim()) {
         setReadmeContent(content);
+        setError(null);
       } else {
-        setError(language === 'zh' ? '该仓库没有 README 文件' : 'This repository has no README file');
+        setReadmeContent('');
+        setError(activeVariant.isDefault
+          ? (language === 'zh' ? '该仓库没有 README 文件' : 'This repository has no README file')
+          : (language === 'zh' ? '此 README 文件为空' : 'This README file is empty'));
       }
     } catch (err) {
       if (abortController.signal.aborted) return;
       console.error('Failed to fetch README:', err);
-      setError(language === 'zh' ? '加载 README 失败，请检查网络连接或稍后重试' : 'Failed to load README. Please check your network connection and try again later');
+      setReadmeContent('');
+      setError(activeVariant.isDefault
+        ? (language === 'zh' ? '加载 README 失败，请检查网络连接或稍后重试' : 'Failed to load README. Please check your network connection and try again later')
+        : (language === 'zh' ? '加载所选 README 失败，请稍后重试' : 'Failed to load selected README. Please try again later'));
     } finally {
       if (!abortController.signal.aborted) {
         setLoading(false);
       }
     }
-  }, [repository, githubToken, language]);
+  }, [repository, githubToken, language, defaultReadmeVariant, readmeCache]);
+
+  const handleVariantChange = useCallback((key: string) => {
+    setSelectedReadmeKey(key);
+    const variant = readmeVariants.find(v => v.key === key) || defaultReadmeVariant;
+    fetchReadme(variant);
+  }, [readmeVariants, defaultReadmeVariant, fetchReadme]);
 
   useEffect(() => {
     if (isOpen && repository) {
-      fetchReadme();
+      setReadmeCache({});
+      setSelectedReadmeKey('default');
+      fetchReadme(defaultReadmeVariant);
+
+      const loadVariants = async () => {
+        const [owner, name] = repository.full_name.split('/');
+        let candidates: { name?: string; path: string; type?: string }[] = [];
+        try {
+          if (githubToken) {
+            const githubApi = new GitHubApiService(githubToken);
+            candidates = await githubApi.listReadmeCandidates(owner, name);
+          }
+        } catch { /* best effort */ }
+        const variants = buildReadmeVariants(candidates, language as 'zh' | 'en');
+        setReadmeVariants(variants);
+      };
+      loadVariants();
     }
-  }, [isOpen, repository, fetchReadme]);
+  }, [isOpen, repository, fetchReadme, githubToken, language, defaultReadmeVariant]);
 
   useEffect(() => {
     if (displayContent) {
@@ -571,6 +616,18 @@ export const ReadmeModal: React.FC<ReadmeModalProps> = ({
                   {translateError}
                 </div>
               )}
+              {readmeVariants.length > 1 && (
+                <select
+                  value={selectedReadmeKey}
+                  onChange={(e) => handleVariantChange(e.target.value)}
+                  className="px-2 py-1 text-xs border border-black/[0.06] dark:border-white/[0.04] rounded-lg bg-white dark:bg-panel-dark text-gray-900 dark:text-text-primary focus:ring-2 focus:ring-brand-indigo focus:border-transparent max-w-[180px] truncate"
+                  title={t('选择 README 版本', 'Select README version')}
+                >
+                  {readmeVariants.map((v) => (
+                    <option key={v.key} value={v.key}>{v.label}</option>
+                  ))}
+                </select>
+              )}
               {tocItems.length > 0 && (
                 <button
                   onClick={() => setShowToc(!showToc)}
@@ -669,7 +726,10 @@ export const ReadmeModal: React.FC<ReadmeModalProps> = ({
                   {error}
                 </p>
                 <button
-                  onClick={fetchReadme}
+                  onClick={() => {
+                    const variant = readmeVariants.find(v => v.key === selectedReadmeKey) || defaultReadmeVariant;
+                    fetchReadme(variant);
+                  }}
                   className="px-4 py-2 bg-brand-violet text-white rounded-lg hover:bg-brand-violet/90 dark:bg-status-red/80 dark:hover:bg-status-red transition-colors"
                 >
                   {language === 'zh' ? '重试' : 'Retry'}

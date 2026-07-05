@@ -131,8 +131,40 @@ export interface GitHubUser {
   email: string | null;
 }
 
-export type AIApiType = 'openai' | 'openai-responses' | 'claude' | 'gemini' | 'openai-compatible';
+export type AIApiType = 'openai' | 'openai-responses' | 'claude' | 'gemini' | 'deepseek' | 'mimo' | 'openai-compatible';
+
+export type EmbeddingApiType = 'openai' | 'openai-compatible' | 'gemini' | 'cohere' | 'ollama' | 'siliconflow';
+
+export interface EmbeddingConfig {
+  id: string;
+  name: string;
+  apiType: EmbeddingApiType;
+  baseUrl: string;
+  apiKey: string;
+  model: string;
+  dimensions: number;
+  isActive: boolean;
+  apiKeyStatus?: SecretStatus;
+}
+
+export interface VectorSearchConfig {
+  enabled: boolean;
+  workerUrl: string;
+  authToken: string;
+  embeddingConfigId: string;
+  status?: VectorSearchStatus;
+}
+
+export interface VectorSearchStatus {
+  connected: boolean;
+  vectorCount: number;
+  dimensions: number;
+  lastSyncAt?: string;
+  error?: string;
+}
+
 export type AIReasoningEffort = 'none' | 'low' | 'medium' | 'high' | 'xhigh';
+export type MiMoPlan = 'api' | 'token-plan';
 
 export type SecretStatus = 'ok' | 'empty' | 'decrypt_failed';
 
@@ -148,6 +180,7 @@ export interface AIConfig {
   useCustomPrompt?: boolean; // 是否使用自定义提示词
   concurrency?: number; // AI分析并发数，默认为1
   reasoningEffort?: AIReasoningEffort; // OpenAI GPT-5/Responses 可选 reasoning 强度
+  mimoPlan?: MiMoPlan; // MiMo 渠道：api（按量付费）或 token-plan（订阅制）
   apiKeyStatus?: SecretStatus;
 }
 
@@ -160,6 +193,17 @@ export interface WebDAVConfig {
   path: string;
   isActive: boolean;
   passwordStatus?: SecretStatus;
+}
+
+export type ProxyType = 'http' | 'socks5';
+
+export interface ProxyConfig {
+  enabled: boolean;
+  type: ProxyType;
+  host: string;
+  port: number;
+  username?: string;
+  password?: string;
 }
 
 export interface SearchFilters {
@@ -210,7 +254,14 @@ export interface AppState {
   // AI
   aiConfigs: AIConfig[];
   activeAIConfig: string | null;
-  
+
+  // Embedding
+  embeddingConfigs: EmbeddingConfig[];
+  activeEmbeddingConfig: string | null;
+
+  // Vector Search
+  vectorSearchConfig: VectorSearchConfig;
+
   // WebDAV
   webdavConfigs: WebDAVConfig[];
   activeWebDAVConfig: string | null;
@@ -252,6 +303,9 @@ export interface AppState {
   // Backend
   backendApiSecret: string | null;
 
+  // Network Proxy
+  proxyConfig: ProxyConfig;
+
   // Fork Timeline View
   forks: ForkRepo[];
   readForks: Set<number>;
@@ -270,6 +324,7 @@ export interface AppState {
   releaseExpandedRepositories: Set<number>;
   releaseIsRefreshing: boolean;
   includePreRelease: boolean;  // whether to include pre-release in refresh
+  includeKeysInBackup: boolean;
 
   // Discovery
   discoveryChannels: DiscoveryChannel[];

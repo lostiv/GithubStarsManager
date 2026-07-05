@@ -4,6 +4,7 @@ import { getDb } from '../db/connection.js';
 import { decrypt } from '../services/crypto.js';
 import { config } from '../config.js';
 import { proxyRequest } from '../services/proxyService.js';
+import net from 'net';
 
 const router = Router();
 
@@ -218,11 +219,16 @@ router.post('/api/proxy/ai', async (req, res) => {
       'Accept': 'application/json',
     };
 
-    if (apiType === 'openai' || apiType === 'openai-responses' || apiType === 'openai-compatible') {
-      // openai-compatible 类型直接使用 baseUrl 作为完整地址
-      targetUrl = apiType === 'openai-compatible'
-        ? baseUrl.replace(/\/$/, '')
-        : buildApiUrl(baseUrl, apiType === 'openai-responses' ? 'v1/responses' : 'v1/chat/completions');
+    if (apiType === 'openai' || apiType === 'openai-responses' || apiType === 'openai-compatible' || apiType === 'deepseek' || apiType === 'mimo') {
+      if (apiType === 'openai-compatible') {
+        targetUrl = baseUrl.replace(/\/$/, '');
+      } else if (apiType === 'deepseek') {
+        targetUrl = buildApiUrl(baseUrl, 'v1/chat/completions');
+      } else if (apiType === 'mimo') {
+        targetUrl = buildApiUrl(baseUrl, 'v1/chat/completions');
+      } else {
+        targetUrl = buildApiUrl(baseUrl, apiType === 'openai-responses' ? 'v1/responses' : 'v1/chat/completions');
+      }
       headers['Authorization'] = `Bearer ${apiKey}`;
     } else if (apiType === 'claude') {
       targetUrl = buildApiUrl(baseUrl, 'v1/messages');
@@ -239,15 +245,29 @@ router.post('/api/proxy/ai', async (req, res) => {
       targetUrl = urlObj.toString();
     }
 
-    const effectiveRequestBody = (
-      reasoningEffort
-      && typeof requestBody === 'object'
-      && requestBody !== null
-      && (apiType === 'openai' || apiType === 'openai-responses' || apiType === 'openai-compatible')
-      && !('reasoning' in requestBody)
-    )
-      ? { ...requestBody, reasoning: { effort: reasoningEffort } }
-      : requestBody;
+    const effectiveRequestBody = (() => {
+      const body = requestBody as Record<string, unknown>;
+      const isDeepSeekThinking = apiType === 'deepseek' && model.trim() !== 'deepseek-reasoner';
+      const isMiMo = apiType === 'mimo';
+
+      let result = { ...body };
+
+      if (
+        reasoningEffort
+        && typeof body === 'object'
+        && body !== null
+        && (apiType === 'openai' || apiType === 'openai-responses' || apiType === 'openai-compatible')
+        && !('reasoning' in body)
+      ) {
+        result = { ...result, reasoning: { effort: reasoningEffort } };
+      }
+
+      if (isDeepSeekThinking || isMiMo) {
+        result = { ...result, thinking: { type: 'disabled' } };
+      }
+
+      return result;
+    })();
 
     const timeout = apiType === 'openai-responses' || !!reasoningEffort ? 600000 : 60000;
 
@@ -335,6 +355,75 @@ router.post('/api/proxy/webdav', async (req, res) => {
   } catch (err) {
     console.error('WebDAV proxy error:', err);
     res.status(500).json({ error: 'WebDAV proxy failed', code: 'WEBDAV_PROXY_FAILED' });
+  }
+});
+
+// === Network Proxy Config ===
+
+router.get('/api/settings/proxy', (req, res) => {
+  try {
+    const db = getDb();
+    const row = db.prepare("SELECT value FROM settings WHERE key = 'proxy_config'").get() as { value: string } | undefined;
+    if (!row?.value) {
+      res.json({ enabled: false, type: 'http', host: '', port: 8080 });
+      return;
+    }
+    const parsed = JSON.parse(row.value);
+    res.json({ ...parsed, password: undefined });
+  } catch (err) {
+    console.error('GET proxy config error:', err);
+    res.status(500).json({ error: 'Failed to load proxy config' });
+  }
+});
+
+router.post('/api/settings/proxy', (req, res) => {
+  try {
+    const db = getDb();
+    const { enabled, type, host, port, username, password } = req.body as Record<string, unknown>;
+    const proxyConfig = { enabled: !!enabled, type: type || 'http', host: host || '', port: port || 8080, username: username || '', password: password || '' };
+    db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('proxy_config', ?)").run(JSON.stringify(proxyConfig));
+    res.json({ saved: true });
+  } catch (err) {
+    console.error('POST proxy config error:', err);
+    res.status(500).json({ error: 'Failed to save proxy config' });
+  }
+});
+
+router.post('/api/settings/proxy/test', async (req, res) => {
+  try {
+    const { host, port } = req.body as { host?: string; port?: number; type?: string };
+    if (!host || !port) {
+      res.json({ success: false, error: 'Host and port are required' });
+      return;
+    }
+
+    const socket = new net.Socket();
+    const timeoutMs = 5000;
+
+    const result = await new Promise<{ success: boolean; error?: string }>((resolve) => {
+      const timer = setTimeout(() => {
+        socket.destroy();
+        resolve({ success: false, error: `Connection timeout (${timeoutMs / 1000}s)` });
+      }, timeoutMs);
+
+      socket.on('connect', () => {
+        clearTimeout(timer);
+        socket.destroy();
+        resolve({ success: true });
+      });
+
+      socket.on('error', (err) => {
+        clearTimeout(timer);
+        resolve({ success: false, error: err.message });
+      });
+
+      socket.connect(port, host);
+    });
+
+    res.json(result);
+  } catch (err) {
+    console.error('Proxy test error:', err);
+    res.json({ success: false, error: err instanceof Error ? err.message : 'Unknown error' });
   }
 });
 

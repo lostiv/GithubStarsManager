@@ -5,6 +5,7 @@ import { useAppStore } from '../../store/useAppStore';
 import { WebDAVService } from '../../services/webdavService';
 import { backend } from '../../services/backendAdapter';
 import { useDialog } from '../../hooks/useDialog';
+import { IncludeKeysToggle } from './IncludeKeysToggle';
 
 interface BackupPanelProps {
   t: (zh: string, en: string) => string;
@@ -35,6 +36,7 @@ export const BackupPanel: React.FC<BackupPanelProps> = ({ t }) => {
     addWebDAVConfig,
     updateWebDAVConfig,
     deleteWebDAVConfig,
+    includeKeysInBackup,
   } = useAppStore();
 
   const { toast, confirm } = useDialog();
@@ -150,8 +152,15 @@ export const BackupPanel: React.FC<BackupPanelProps> = ({ t }) => {
         forks,
         customCategories,
         hiddenDefaultCategoryIds,
-        aiConfigs: aiConfigs.map(config => ({ ...config, apiKey: config.apiKey ? '***' : '' })),
-        webdavConfigs: webdavConfigs.map(config => ({ ...config, password: config.password ? '***' : '' })),
+        aiConfigs: aiConfigs.map(config => ({
+          ...config,
+          apiKey: includeKeysInBackup ? config.apiKey : (config.apiKey ? '***' : '')
+        })),
+        webdavConfigs: webdavConfigs.map(config => ({
+          ...config,
+          password: includeKeysInBackup ? config.password : (config.password ? '***' : '')
+        })),
+        includeKeysInBackup,
         exportedAt: new Date().toISOString(),
         version: '1.0'
       };
@@ -452,6 +461,8 @@ export const BackupPanel: React.FC<BackupPanelProps> = ({ t }) => {
           )}</span>
         </div>
       )}
+
+      <IncludeKeysToggle t={t} />
 
       {/* ─── 自动备份设置 ─── */}
       <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg space-y-4">

@@ -10,6 +10,8 @@ import {
   X,
   Trash2,
   ScrollText,
+  Wifi,
+  Search,
 } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import {
@@ -21,9 +23,11 @@ import {
   CategoryPanel,
   DataManagementPanel,
   DiagnosticLogsPanel,
+  NetworkPanel,
+  VectorSearchSettings,
 } from './settings';
 
-type SettingsTab = 'general' | 'ai' | 'webdav' | 'backup' | 'backend' | 'category' | 'data' | 'logs';
+type SettingsTab = 'general' | 'ai' | 'webdav' | 'backup' | 'backend' | 'network' | 'vector' | 'category' | 'data' | 'logs';
 
 interface SettingsTabItem {
   id: SettingsTab;
@@ -296,6 +300,16 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
       icon: <Server className="w-5 h-5" />,
     },
     {
+      id: 'network',
+      label: t('网络代理', 'Network'),
+      icon: <Wifi className="w-5 h-5" />,
+    },
+    {
+      id: 'vector',
+      label: t('向量搜索', 'Vector Search'),
+      icon: <Search className="w-5 h-5" />,
+    },
+    {
       id: 'category',
       label: t('分类管理', 'Categories'),
       icon: <Package className="w-5 h-5" />,
@@ -326,6 +340,10 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
           return <BackupPanel t={t} />;
         case 'backend':
           return <BackendPanel t={t} />;
+        case 'network':
+          return <NetworkPanel t={t} />;
+        case 'vector':
+          return <VectorSearchSettings t={t} />;
         case 'category':
           return <CategoryPanel t={t} />;
         case 'data':

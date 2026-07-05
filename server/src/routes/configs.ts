@@ -481,4 +481,193 @@ router.put('/api/settings', (req, res) => {
   }
 });
 
+// ── Embedding Configs ──
+
+router.get('/api/configs/embedding', (req, res) => {
+  try {
+    const db = getDb();
+    const rows = db.prepare('SELECT * FROM embedding_configs ORDER BY id ASC').all() as Record<string, unknown>[];
+    const configs = rows.map((row) => {
+      const { status } = getMaskedSecretResult({
+        encryptedValue: row.api_key_encrypted,
+        encryptionKey: config.encryptionKey,
+        kind: 'AI API key',
+        configId: row.id,
+        configName: row.name,
+      });
+      return {
+        id: row.id,
+        name: row.name,
+        apiType: row.api_type,
+        baseUrl: row.base_url,
+        apiKey: maskApiKey(row.api_key_encrypted as string),
+        model: row.model,
+        dimensions: row.dimensions,
+        isActive: !!row.is_active,
+        apiKeyStatus: status,
+      };
+    });
+    res.json(configs);
+  } catch (err) {
+    console.error('GET /api/configs/embedding error:', err);
+    res.status(500).json({ error: 'Failed to fetch embedding configs', code: 'FETCH_EMBEDDING_CONFIGS_FAILED' });
+  }
+});
+
+router.post('/api/configs/embedding', (req, res) => {
+  try {
+    const db = getDb();
+    const { id, name, apiType, baseUrl, apiKey, model, dimensions, isActive } = req.body as Record<string, unknown>;
+    const configId = id || Date.now().toString();
+    const encryptedKey = apiKey && typeof apiKey === 'string' ? encrypt(apiKey, config.encryptionKey) : '';
+
+    db.prepare(
+      'INSERT INTO embedding_configs (id, name, api_type, base_url, api_key_encrypted, model, dimensions, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+    ).run(configId, name ?? '', apiType ?? 'openai', baseUrl ?? '', encryptedKey, model ?? '', dimensions ?? 1536, isActive ? 1 : 0);
+
+    res.status(201).json({ id: configId, isActive: !!isActive });
+  } catch (err) {
+    console.error('POST /api/configs/embedding error:', err);
+    res.status(500).json({ error: 'Failed to create embedding config', code: 'CREATE_EMBEDDING_CONFIG_FAILED' });
+  }
+});
+
+router.put('/api/configs/embedding/:id', (req, res) => {
+  try {
+    const db = getDb();
+    const { id } = req.params;
+    const { name, apiType, baseUrl, apiKey, model, dimensions, isActive } = req.body as Record<string, unknown>;
+
+    const existing = db.prepare('SELECT * FROM embedding_configs WHERE id = ?').get(id) as Record<string, unknown> | undefined;
+    if (!existing) {
+      res.status(404).json({ error: 'Embedding config not found' });
+      return;
+    }
+
+    const encryptedKey = apiKey && typeof apiKey === 'string' && !apiKey.includes('***')
+      ? encrypt(apiKey, config.encryptionKey)
+      : (existing.api_key_encrypted as string);
+
+    db.prepare(
+      "UPDATE embedding_configs SET name = ?, api_type = ?, base_url = ?, api_key_encrypted = ?, model = ?, dimensions = ?, is_active = ?, updated_at = datetime('now') WHERE id = ?"
+    ).run(name ?? '', apiType ?? 'openai', baseUrl ?? '', encryptedKey, model ?? '', dimensions ?? 1536, isActive ? 1 : 0, id);
+
+    res.json({ updated: true });
+  } catch (err) {
+    console.error('PUT /api/configs/embedding error:', err);
+    res.status(500).json({ error: 'Failed to update embedding config', code: 'UPDATE_EMBEDDING_CONFIG_FAILED' });
+  }
+});
+
+router.delete('/api/configs/embedding/:id', (req, res) => {
+  try {
+    const db = getDb();
+    const { id } = req.params;
+    db.prepare('DELETE FROM embedding_configs WHERE id = ?').run(id);
+    res.json({ deleted: true });
+  } catch (err) {
+    console.error('DELETE /api/configs/embedding error:', err);
+    res.status(500).json({ error: 'Failed to delete embedding config', code: 'DELETE_EMBEDDING_CONFIG_FAILED' });
+  }
+});
+
+router.put('/api/configs/embedding/bulk', (req, res) => {
+  try {
+    const db = getDb();
+    const configs = req.body as Record<string, unknown>[];
+    if (!Array.isArray(configs)) {
+      res.status(400).json({ error: 'Expected array of configs' });
+      return;
+    }
+
+    const upsert = db.transaction(() => {
+      for (const c of configs) {
+        const encryptedKey = c.apiKey && typeof c.apiKey === 'string' && !c.apiKey.includes('***')
+          ? encrypt(c.apiKey, config.encryptionKey)
+          : '';
+        db.prepare(
+          "INSERT OR REPLACE INTO embedding_configs (id, name, api_type, base_url, api_key_encrypted, model, dimensions, is_active, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))"
+        ).run(c.id, c.name ?? '', c.apiType ?? 'openai', c.baseUrl ?? '', encryptedKey, c.model ?? '', c.dimensions ?? 1536, c.isActive ? 1 : 0);
+      }
+    });
+
+    upsert();
+    res.json({ updated: true, count: configs.length });
+  } catch (err) {
+    console.error('PUT /api/configs/embedding/bulk error:', err);
+    res.status(500).json({ error: 'Failed to bulk update embedding configs', code: 'BULK_UPDATE_EMBEDDING_CONFIGS_FAILED' });
+  }
+});
+
+// ── Vector Search Config ──
+
+router.get('/api/configs/vector-search', (req, res) => {
+  try {
+    const db = getDb();
+    const row = db.prepare("SELECT * FROM vector_search_configs WHERE id = 'default'").get() as Record<string, unknown> | undefined;
+
+    if (!row) {
+      res.json({ enabled: false, workerUrl: '', authToken: '', embeddingConfigId: '', indexMode: 'readme', readmeMaxChars: 6000 });
+      return;
+    }
+
+    let authToken = '';
+    let authTokenStatus: SecretStatus = 'empty';
+    if (row.auth_token_encrypted && typeof row.auth_token_encrypted === 'string' && row.auth_token_encrypted) {
+      try {
+        authToken = decrypt(row.auth_token_encrypted, config.encryptionKey);
+        authTokenStatus = 'ok';
+      } catch {
+        authTokenStatus = 'decrypt_failed';
+      }
+    }
+
+    const shouldDecrypt = req.query.decrypt === 'true';
+
+    res.json({
+      enabled: !!row.enabled,
+      workerUrl: row.worker_url ?? '',
+      authToken: shouldDecrypt ? authToken : (authToken ? '***' : ''),
+      authTokenStatus,
+      embeddingConfigId: row.embedding_config_id ?? '',
+      indexMode: row.index_mode ?? 'readme',
+      readmeMaxChars: row.readme_max_chars ?? 6000,
+      status: row.status_json ? JSON.parse(row.status_json as string) : undefined,
+      lastSyncAt: row.last_sync_at ?? null,
+    });
+  } catch (err) {
+    console.error('GET /api/configs/vector-search error:', err);
+    res.status(500).json({ error: 'Failed to fetch vector search config', code: 'FETCH_VECTOR_SEARCH_CONFIG_FAILED' });
+  }
+});
+
+router.put('/api/configs/vector-search', (req, res) => {
+  try {
+    const db = getDb();
+    const { enabled, workerUrl, authToken, embeddingConfigId, indexMode, readmeMaxChars, status, lastSyncAt } = req.body as Record<string, unknown>;
+
+    let encryptedToken = '';
+    if (typeof authToken === 'string' && !authToken.includes('***')) {
+      encryptedToken = encrypt(authToken, config.encryptionKey);
+    } else {
+      const existing = db.prepare("SELECT auth_token_encrypted FROM vector_search_configs WHERE id = 'default'").get() as Record<string, unknown> | undefined;
+      encryptedToken = (existing?.auth_token_encrypted as string) ?? '';
+    }
+
+    const mode = typeof indexMode === 'string' && ['readme', 'description'].includes(indexMode) ? indexMode : 'readme';
+    const maxChars = typeof readmeMaxChars === 'number' && readmeMaxChars > 0 ? readmeMaxChars : 6000;
+    const statusJson = status ? JSON.stringify(status) : null;
+
+    db.prepare(`
+      INSERT OR REPLACE INTO vector_search_configs (id, enabled, worker_url, auth_token_encrypted, embedding_config_id, index_mode, readme_max_chars, status_json, last_sync_at, updated_at)
+      VALUES ('default', ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+    `).run(enabled ? 1 : 0, workerUrl ?? '', encryptedToken, embeddingConfigId ?? '', mode, maxChars, statusJson, lastSyncAt ?? null);
+
+    res.json({ updated: true });
+  } catch (err) {
+    console.error('PUT /api/configs/vector-search error:', err);
+    res.status(500).json({ error: 'Failed to update vector search config', code: 'UPDATE_VECTOR_SEARCH_CONFIG_FAILED' });
+  }
+});
+
 export default router;

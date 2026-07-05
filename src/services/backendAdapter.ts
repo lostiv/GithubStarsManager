@@ -227,6 +227,28 @@ class BackendAdapter {
     }
   }
 
+  async getRepositoryReadmeByPath(owner: string, repo: string, path: string): Promise<string> {
+    if (!this._backendUrl) throw new Error('Backend not available');
+
+    try {
+      const res = await this.fetchWithTimeout(`${this._backendUrl}/proxy/github/repos/${this.encPath(owner, repo)}/contents/${encodeURIComponent(path)}`, {
+        method: 'POST',
+        headers: this.getAuthHeaders(),
+        body: JSON.stringify({ method: 'GET' })
+      });
+      if (!res.ok) return '';
+      const data = await res.json() as { encoding?: string; content?: string };
+      if (data.encoding === 'base64' && data.content) {
+        const binaryStr = atob(data.content);
+        const bytes = Uint8Array.from(binaryStr, c => c.charCodeAt(0));
+        return new TextDecoder().decode(bytes);
+      }
+      return data.content || '';
+    } catch {
+      return '';
+    }
+  }
+
   async getRepositoryReleases(owner: string, repo: string, page = 1, perPage = 30): Promise<Release[]> {
     if (!this._backendUrl) throw new Error('Backend not available');
 

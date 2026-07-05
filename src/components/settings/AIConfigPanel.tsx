@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { Bot, Plus, Edit3, Trash2, Save, X, TestTube, RefreshCw, MessageSquare, Eye, EyeOff, AlertCircle } from 'lucide-react';
-import { AIConfig, AIApiType, AIReasoningEffort } from '../../types';
+import { AIConfig, AIApiType, AIReasoningEffort, MiMoPlan } from '../../types';
 import { useAppStore } from '../../store/useAppStore';
 import { AIService } from '../../services/aiService';
 import { backend } from '../../services/backendAdapter';
@@ -23,6 +23,7 @@ type AIFormState = {
   useCustomPrompt: boolean;
   concurrency: number;
   reasoningEffort: '' | AIReasoningEffort;
+  mimoPlan: '' | MiMoPlan;
 };
 
 const DEFAULT_API_ENDPOINTS: Record<AIApiType, string> = {
@@ -30,6 +31,8 @@ const DEFAULT_API_ENDPOINTS: Record<AIApiType, string> = {
   'openai-responses': 'https://api.openai.com/v1',
   claude: 'https://api.anthropic.com/v1',
   gemini: 'https://generativelanguage.googleapis.com/v1beta',
+  deepseek: 'https://api.deepseek.com/v1',
+  mimo: 'https://api.xiaomi.com/v1',
   'openai-compatible': '',
 };
 
@@ -81,6 +84,7 @@ export const AIConfigPanel: React.FC<AIConfigPanelProps> = ({ t }) => {
     useCustomPrompt: false,
     concurrency: 1,
     reasoningEffort: '',
+    mimoPlan: '',
   });
 
   // Auto-fill baseUrl when API type changes
@@ -112,6 +116,7 @@ export const AIConfigPanel: React.FC<AIConfigPanelProps> = ({ t }) => {
       useCustomPrompt: false,
       concurrency: 1,
       reasoningEffort: '',
+      mimoPlan: '',
     });
     setShowForm(false);
     setEditingId(null);
@@ -139,6 +144,7 @@ export const AIConfigPanel: React.FC<AIConfigPanelProps> = ({ t }) => {
           useCustomPrompt: form.useCustomPrompt,
           concurrency: form.concurrency,
           reasoningEffort: form.reasoningEffort || undefined,
+          mimoPlan: form.mimoPlan || undefined,
           isActive: existingConfig.isActive,
         };
         updateAIConfig(editingId, updates);
@@ -159,6 +165,7 @@ export const AIConfigPanel: React.FC<AIConfigPanelProps> = ({ t }) => {
         useCustomPrompt: form.useCustomPrompt,
         concurrency: form.concurrency,
         reasoningEffort: form.reasoningEffort || undefined,
+        mimoPlan: form.mimoPlan || undefined,
       };
       addAIConfig(config);
     }
@@ -182,6 +189,7 @@ export const AIConfigPanel: React.FC<AIConfigPanelProps> = ({ t }) => {
       useCustomPrompt: config.useCustomPrompt || false,
       concurrency: config.concurrency || 1,
       reasoningEffort: config.reasoningEffort || '',
+      mimoPlan: config.mimoPlan || '',
     });
     setEditingId(config.id);
     setShowForm(true);
@@ -401,6 +409,8 @@ Repository information:
                 <option value="openai-responses">OpenAI (Responses)</option>
                 <option value="claude">Claude</option>
                 <option value="gemini">Gemini</option>
+                <option value="deepseek">DeepSeek</option>
+                <option value="mimo">MiMo</option>
                 <option value="openai-compatible">OpenAI Compatible (Custom Endpoint)</option>
               </select>
             </div>
@@ -419,9 +429,13 @@ Repository information:
                     ? 'https://api.openai.com/v1'
                     : form.apiType === 'claude'
                       ? 'https://api.anthropic.com/v1'
-                      : form.apiType === 'openai-compatible'
-                        ? 'https://integrate.api.nvidia.com/v1/chat/completions'
-                        : 'https://generativelanguage.googleapis.com/v1beta'
+                      : form.apiType === 'deepseek'
+                        ? 'https://api.deepseek.com/v1'
+                        : form.apiType === 'mimo'
+                          ? 'https://api.xiaomi.com/v1'
+                          : form.apiType === 'openai-compatible'
+                            ? 'https://integrate.api.nvidia.com/v1/chat/completions'
+                            : 'https://generativelanguage.googleapis.com/v1beta'
                 }
               />
               <p className="text-xs text-gray-500 dark:text-text-tertiary mt-1">

@@ -16,6 +16,7 @@ import {
   ForkRepo,
   WorkflowDefinition,
 } from '../types';
+import { isReadmeCandidateItem, type GitHubReadmeCandidateItem } from '../utils/readmeVariants';
 
 interface GitHubStarredItem {
   starred_at?: string;
@@ -193,6 +194,41 @@ export class GitHubApiService {
     } catch (error) {
       console.warn(`Failed to fetch README for ${owner}/${repo}:`, error);
       return '';
+    }
+  }
+
+  async getRepositoryReadmeByPath(owner: string, repo: string, path: string, signal?: AbortSignal): Promise<string> {
+    try {
+      const response = await this.makeRequest<{ content: string; encoding: string }>(
+        `/repos/${owner}/${repo}/contents/${encodeURIComponent(path)}`,
+        undefined,
+        signal
+      );
+
+      if (response.encoding === 'base64') {
+        const binaryString = atob(response.content);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+        return new TextDecoder('utf-8').decode(bytes);
+      }
+      return response.content;
+    } catch (error) {
+      console.warn(`Failed to fetch README by path for ${owner}/${repo}:`, error);
+      return '';
+    }
+  }
+
+  async listReadmeCandidates(owner: string, repo: string): Promise<GitHubReadmeCandidateItem[]> {
+    try {
+      const items = await this.makeRequest<GitHubReadmeCandidateItem[]>(
+        `/repos/${owner}/${repo}/contents`
+      );
+      return items.filter(isReadmeCandidateItem);
+    } catch (error) {
+      console.warn(`Failed to list README candidates for ${owner}/${repo}:`, error);
+      return [];
     }
   }
 

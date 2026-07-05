@@ -339,8 +339,9 @@ async function callAI(
     if (reasoningEffort && (apiType === 'openai' || apiType === 'openai-responses' || apiType === 'openai-compatible')) {
       (requestBody as Record<string, unknown>).reasoning = { effort: reasoningEffort };
     }
-    // Disable thinking chain for MiMo models to prevent reasoning content leaking into analysis
-    if (model.toLowerCase().includes('mimo')) {
+    const isDeepSeekThinking = apiType === 'deepseek' && model.trim() !== 'deepseek-reasoner';
+    const isMiMo = apiType === 'mimo';
+    if (isDeepSeekThinking || isMiMo) {
       (requestBody as Record<string, unknown>).thinking = { type: 'disabled' };
     }
   }
