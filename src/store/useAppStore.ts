@@ -26,7 +26,9 @@ import {
   defaultSubscriptionChannels,
   ProxyConfig,
   EmbeddingConfig,
-  VectorSearchConfig
+  VectorSearchConfig,
+  VectorSearchStatus,
+  VectorIndexingState
 } from '../types';
 import { indexedDBStorage } from '../services/indexedDbStorage';
 import { PRESET_FILTERS } from '../constants/presetFilters';
@@ -111,6 +113,8 @@ interface AppActions {
 
   // Vector Search actions
   setVectorSearchConfig: (config: Partial<VectorSearchConfig>) => void;
+  setVectorSearchStatus: (status: VectorSearchStatus | undefined) => void;
+  setVectorIndexingState: (state: Partial<VectorIndexingState>) => void;
 
   // WebDAV actions
   addWebDAVConfig: (config: WebDAVConfig) => void;
@@ -736,6 +740,8 @@ export const useAppStore = create<AppState & AppActions>()(
       embeddingConfigs: [],
       activeEmbeddingConfig: null,
       vectorSearchConfig: { enabled: false, workerUrl: '', authToken: '', embeddingConfigId: '' },
+      vectorSearchStatus: undefined,
+      vectorIndexingState: { isIndexing: false, phase: null, phaseDone: 0, phaseTotal: 0, result: null },
       webdavConfigs: [],
       activeWebDAVConfig: null,
       lastBackup: null,
@@ -970,6 +976,10 @@ export const useAppStore = create<AppState & AppActions>()(
       // Vector Search actions
       setVectorSearchConfig: (partial) => set((state) => ({
         vectorSearchConfig: { ...state.vectorSearchConfig, ...partial },
+      })),
+      setVectorSearchStatus: (vectorSearchStatus) => set({ vectorSearchStatus }),
+      setVectorIndexingState: (partial) => set((state) => ({
+        vectorIndexingState: { ...state.vectorIndexingState, ...partial },
       })),
 
       // WebDAV actions
