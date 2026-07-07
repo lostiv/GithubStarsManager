@@ -12,10 +12,13 @@ router.get('/api/backup/settings', (_req, res) => {
       'auto_backup_%'
     ) as { key: string; value: string | null }[];
 
+    const includeKeysRow = db.prepare("SELECT value FROM settings WHERE key = 'include_keys_in_backup'").get() as { value: string } | undefined;
+
     const settings: Record<string, unknown> = {
       auto_backup_enabled: false,
       auto_backup_interval_hours: 24,
       auto_backup_retention_count: 30,
+      include_keys_in_backup: includeKeysRow?.value === 'true',
     };
 
     for (const row of rows) {
@@ -43,10 +46,11 @@ router.put('/api/backup/settings', (req, res) => {
       return;
     }
 
-    const { auto_backup_enabled, auto_backup_interval_hours, auto_backup_retention_count } = req.body as {
+    const { auto_backup_enabled, auto_backup_interval_hours, auto_backup_retention_count, include_keys_in_backup } = req.body as {
       auto_backup_enabled?: boolean;
       auto_backup_interval_hours?: number;
       auto_backup_retention_count?: number;
+      include_keys_in_backup?: boolean;
     };
 
     const errors: string[] = [];
@@ -79,6 +83,10 @@ router.put('/api/backup/settings', (req, res) => {
       }
     }
 
+    if (include_keys_in_backup !== undefined && typeof include_keys_in_backup !== 'boolean') {
+      errors.push('include_keys_in_backup 必须为布尔类型');
+    }
+
     if (auto_backup_enabled === true) {
       const activeConfig = db.prepare('SELECT id FROM webdav_configs WHERE is_active = 1').get();
       if (!activeConfig) {
@@ -102,6 +110,9 @@ router.put('/api/backup/settings', (req, res) => {
       }
       if (auto_backup_retention_count !== undefined) {
         stmt.run('auto_backup_retention_count', String(auto_backup_retention_count));
+      }
+      if (include_keys_in_backup !== undefined) {
+        stmt.run('include_keys_in_backup', include_keys_in_backup ? 'true' : 'false');
       }
     });
 

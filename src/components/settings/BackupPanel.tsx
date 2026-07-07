@@ -146,6 +146,19 @@ export const BackupPanel: React.FC<BackupPanelProps> = ({ t }) => {
         toast(t('请先配置并激活WebDAV服务。', 'Please configure and activate WebDAV service first.'), 'error');
         return;
       }
+
+      if (includeKeysInBackup) {
+        const confirmed = await confirm(
+          t('安全警告', 'Security Warning'),
+          t(
+            '后端不可用时，密钥将以明文写入备份文件并上传到 WebDAV。建议仅在可信网络环境下操作。是否继续？',
+            'When backend is unavailable, keys will be stored in plaintext in the backup file and uploaded to WebDAV. Only proceed on trusted networks. Continue?'
+          ),
+          { type: 'warning' }
+        );
+        if (!confirmed) return;
+      }
+
       const webdavService = new WebDAVService(activeConfig);
       const backupData = {
         repositories,
