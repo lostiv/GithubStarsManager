@@ -67,7 +67,7 @@ export const NetworkPanel: React.FC<NetworkPanelProps> = ({ t }) => {
         authHeaders['Authorization'] = `Bearer ${backendApiSecret}`;
       }
 
-      const resp = await fetch(`${base}/proxy/test`, {
+      const resp = await fetch(`${base}/settings/proxy/test`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...authHeaders },
         body: JSON.stringify(form),

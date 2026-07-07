@@ -473,6 +473,9 @@ export const VectorSearchSettings: React.FC<VectorSearchSettingsProps> = ({ t })
           </div>
         </div>
         <button
+          role="switch"
+          aria-checked={vectorSearchConfig.enabled}
+          aria-label={t('启用向量搜索', 'Enable Vector Search')}
           onClick={() => setVectorSearchConfig({ enabled: !vectorSearchConfig.enabled })}
           className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
             vectorSearchConfig.enabled ? 'bg-brand-indigo' : 'bg-gray-300 dark:bg-gray-600'

@@ -109,6 +109,7 @@ export const BackupPanel: React.FC<BackupPanelProps> = ({ t }) => {
         auto_backup_enabled: autoEnabled,
         auto_backup_interval_hours: intervalHours,
         auto_backup_retention_count: retentionCount,
+        include_keys_in_backup: includeKeysInBackup,
       });
       await loadAutoStatus();
       toast(t('自动备份设置已保存', 'Auto backup settings saved'), 'success');

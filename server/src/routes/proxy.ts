@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import type { Response as ExpressResponse } from 'express';
 import { getDb } from '../db/connection.js';
-import { decrypt } from '../services/crypto.js';
+import { decrypt, encrypt } from '../services/crypto.js';
 import { config } from '../config.js';
 import { proxyRequest } from '../services/proxyService.js';
 import net from 'net';
@@ -369,7 +369,21 @@ router.get('/api/settings/proxy', (req, res) => {
       return;
     }
     const parsed = JSON.parse(row.value);
-    res.json({ ...parsed, password: undefined });
+    const result = {
+      enabled: parsed.enabled,
+      type: parsed.type,
+      host: parsed.host,
+      port: parsed.port,
+      username: parsed.username,
+      password: undefined,
+      hasPassword: false,
+    };
+    if (parsed.passwordEncrypted) {
+      result.hasPassword = true;
+    } else if (parsed.password) {
+      result.hasPassword = true;
+    }
+    res.json(result);
   } catch (err) {
     console.error('GET proxy config error:', err);
     res.status(500).json({ error: 'Failed to load proxy config' });
@@ -380,7 +394,32 @@ router.post('/api/settings/proxy', (req, res) => {
   try {
     const db = getDb();
     const { enabled, type, host, port, username, password } = req.body as Record<string, unknown>;
-    const proxyConfig = { enabled: !!enabled, type: type || 'http', host: host || '', port: port || 8080, username: username || '', password: password || '' };
+
+    const validTypes = ['http', 'socks5'];
+    const proxyType = typeof type === 'string' && validTypes.includes(type) ? type : 'http';
+    const proxyPort = typeof port === 'number' && port >= 1 && port <= 65535 ? port : 8080;
+
+    let encryptedPassword = '';
+    if (typeof password === 'string' && password && !password.includes('***')) {
+      encryptedPassword = encrypt(password, config.encryptionKey);
+    } else {
+      const existingRow = db.prepare("SELECT value FROM settings WHERE key = 'proxy_config'").get() as { value: string } | undefined;
+      if (existingRow?.value) {
+        try {
+          const existing = JSON.parse(existingRow.value);
+          encryptedPassword = existing.passwordEncrypted || '';
+        } catch { /* ignore */ }
+      }
+    }
+
+    const proxyConfig = {
+      enabled: !!enabled,
+      type: proxyType,
+      host: typeof host === 'string' ? host : '',
+      port: proxyPort,
+      username: typeof username === 'string' ? username : '',
+      passwordEncrypted: encryptedPassword,
+    };
     db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('proxy_config', ?)").run(JSON.stringify(proxyConfig));
     res.json({ saved: true });
   } catch (err) {

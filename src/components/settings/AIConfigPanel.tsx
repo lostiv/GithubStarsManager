@@ -32,7 +32,7 @@ const DEFAULT_API_ENDPOINTS: Record<AIApiType, string> = {
   claude: 'https://api.anthropic.com/v1',
   gemini: 'https://generativelanguage.googleapis.com/v1beta',
   deepseek: 'https://api.deepseek.com/v1',
-  mimo: 'https://api.xiaomi.com/v1',
+  mimo: 'https://api.xiaomimimo.com/v1',
   'openai-compatible': '',
 };
 
@@ -529,6 +529,29 @@ Repository information:
                 )}
               </p>
             </div>
+
+            {form.apiType === 'mimo' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-900 dark:text-text-secondary mb-1">
+                  {t('MiMo 方案', 'MiMo Plan')}
+                </label>
+                <select
+                  value={form.mimoPlan}
+                  onChange={(e) => setForm(prev => ({ ...prev, mimoPlan: e.target.value as '' | MiMoPlan }))}
+                  className="w-full px-3 py-2 border border-black/[0.06] dark:border-white/[0.04] rounded-lg bg-white dark:bg-panel-dark text-gray-900 dark:text-text-primary focus:ring-2 focus:ring-brand-violet focus:border-transparent focus:outline-none"
+                >
+                  <option value="">{t('按量付费 (API)', 'Pay-as-you-go (API)')}</option>
+                  <option value="api">{t('按量付费 — sk-xxx', 'Pay-as-you-go — sk-xxx')}</option>
+                  <option value="token-plan">{t('订阅制 — tp-xxx', 'Token Plan — tp-xxx')}</option>
+                </select>
+                <p className="text-xs text-gray-500 dark:text-text-tertiary mt-1">
+                  {t(
+                    '订阅制需使用对应集群 URL（如 token-plan-cn.xiaomimimo.com）',
+                    'Token Plan requires cluster-specific URL (e.g. token-plan-cn.xiaomimimo.com)'
+                  )}
+                </p>
+              </div>
+            )}
           </div>
 
           <div className="mb-4">

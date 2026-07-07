@@ -488,7 +488,7 @@ router.get('/api/configs/embedding', (req, res) => {
     const db = getDb();
     const rows = db.prepare('SELECT * FROM embedding_configs ORDER BY id ASC').all() as Record<string, unknown>[];
     const configs = rows.map((row) => {
-      const { status } = getMaskedSecretResult({
+      const { decryptedValue, status } = getMaskedSecretResult({
         encryptedValue: row.api_key_encrypted,
         encryptionKey: config.encryptionKey,
         kind: 'AI API key',
@@ -500,7 +500,7 @@ router.get('/api/configs/embedding', (req, res) => {
         name: row.name,
         apiType: row.api_type,
         baseUrl: row.base_url,
-        apiKey: maskApiKey(row.api_key_encrypted as string),
+        apiKey: maskApiKey(decryptedValue),
         model: row.model,
         dimensions: row.dimensions,
         isActive: !!row.is_active,
@@ -582,9 +582,13 @@ router.put('/api/configs/embedding/bulk', (req, res) => {
 
     const upsert = db.transaction(() => {
       for (const c of configs) {
-        const encryptedKey = c.apiKey && typeof c.apiKey === 'string' && !c.apiKey.includes('***')
-          ? encrypt(c.apiKey, config.encryptionKey)
-          : '';
+        let encryptedKey = '';
+        if (c.apiKey && typeof c.apiKey === 'string' && !c.apiKey.includes('***')) {
+          encryptedKey = encrypt(c.apiKey, config.encryptionKey);
+        } else {
+          const existing = db.prepare('SELECT api_key_encrypted FROM embedding_configs WHERE id = ?').get(c.id) as Record<string, unknown> | undefined;
+          encryptedKey = (existing?.api_key_encrypted as string) ?? '';
+        }
         db.prepare(
           "INSERT OR REPLACE INTO embedding_configs (id, name, api_type, base_url, api_key_encrypted, model, dimensions, is_active, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))"
         ).run(c.id, c.name ?? '', c.apiType ?? 'openai', c.baseUrl ?? '', encryptedKey, c.model ?? '', c.dimensions ?? 1536, c.isActive ? 1 : 0);

@@ -231,7 +231,8 @@ class BackendAdapter {
     if (!this._backendUrl) throw new Error('Backend not available');
 
     try {
-      const res = await this.fetchWithTimeout(`${this._backendUrl}/proxy/github/repos/${this.encPath(owner, repo)}/contents/${encodeURIComponent(path)}`, {
+      const encodedPath = path.split('/').map(encodeURIComponent).join('/');
+      const res = await this.fetchWithTimeout(`${this._backendUrl}/proxy/github/repos/${this.encPath(owner, repo)}/contents/${encodedPath}`, {
         method: 'POST',
         headers: this.getAuthHeaders(),
         body: JSON.stringify({ method: 'GET' })
@@ -963,6 +964,7 @@ class BackendAdapter {
     auto_backup_enabled?: boolean;
     auto_backup_interval_hours?: number;
     auto_backup_retention_count?: number;
+    include_keys_in_backup?: boolean;
   }): Promise<void> {
     if (!this._backendUrl) return;
 

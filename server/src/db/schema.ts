@@ -151,7 +151,7 @@ export function initializeSchema(db: Database.Database): void {
       enabled INTEGER DEFAULT 0,
       worker_url TEXT NOT NULL DEFAULT '',
       auth_token_encrypted TEXT NOT NULL DEFAULT '',
-      embedding_config_id TEXT NOT NULL DEFAULT '',
+      embedding_config_id TEXT NOT NULL DEFAULT '' REFERENCES embedding_configs(id) ON DELETE SET DEFAULT,
       index_mode TEXT NOT NULL DEFAULT 'readme',
       readme_max_chars INTEGER NOT NULL DEFAULT 6000,
       status_json TEXT,

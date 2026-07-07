@@ -110,7 +110,7 @@ interface AppActions {
   setEmbeddingConfigs: (configs: EmbeddingConfig[]) => void;
 
   // Vector Search actions
-  setVectorSearchConfig: (config: VectorSearchConfig) => void;
+  setVectorSearchConfig: (config: Partial<VectorSearchConfig>) => void;
 
   // WebDAV actions
   addWebDAVConfig: (config: WebDAVConfig) => void;
@@ -968,7 +968,9 @@ export const useAppStore = create<AppState & AppActions>()(
       })),
 
       // Vector Search actions
-      setVectorSearchConfig: (vectorSearchConfig) => set({ vectorSearchConfig }),
+      setVectorSearchConfig: (partial) => set((state) => ({
+        vectorSearchConfig: { ...state.vectorSearchConfig, ...partial },
+      })),
 
       // WebDAV actions
       addWebDAVConfig: (config) => set((state) => ({

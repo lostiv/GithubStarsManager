@@ -1,5 +1,5 @@
 import React from 'react';
-import { Key } from 'lucide-react';
+import { Key, AlertTriangle } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 
 interface IncludeKeysToggleProps {
@@ -22,6 +22,13 @@ export const IncludeKeysToggle: React.FC<IncludeKeysToggleProps> = ({ t }) => {
               {t(
                 '包含 AI 配置、WebDAV、代理和后端服务器的密钥',
                 'Includes keys for AI configs, WebDAV, proxy, and backend server'
+              )}
+            </p>
+            <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-1 flex items-center gap-1">
+              <AlertTriangle className="w-3 h-3 shrink-0" />
+              {t(
+                'WebDAV 直传回退时密钥将以明文写入备份文件',
+                'Keys will be stored in plaintext when using WebDAV direct upload fallback'
               )}
             </p>
           </div>
