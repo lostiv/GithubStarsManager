@@ -1104,6 +1104,45 @@ class BackendAdapter {
       githubTokenConfigured: boolean;
     }>;
   }
+
+  async fetchBackendLogs(limit = 2000): Promise<unknown[]> {
+    if (!this._backendUrl) throw new Error('Backend not available');
+    const res = await this.fetchWithTimeout(`${this._backendUrl}/logs?limit=${limit}`, {
+      headers: this.getAuthHeaders(),
+    });
+    if (!res.ok) await this.throwTranslatedError(res, 'Fetch backend logs error');
+    return res.json() as Promise<unknown[]>;
+  }
+
+  async fetchBackendDebugMode(): Promise<{ debugMode: boolean }> {
+    if (!this._backendUrl) throw new Error('Backend not available');
+    const res = await this.fetchWithTimeout(`${this._backendUrl}/logs/debug`, {
+      headers: this.getAuthHeaders(),
+    });
+    if (!res.ok) await this.throwTranslatedError(res, 'Fetch debug mode error');
+    return res.json() as Promise<{ debugMode: boolean }>;
+  }
+
+  async setBackendDebugMode(enabled: boolean): Promise<{ success: boolean; debugMode: boolean }> {
+    if (!this._backendUrl) throw new Error('Backend not available');
+    const res = await this.fetchWithTimeout(`${this._backendUrl}/logs/debug`, {
+      method: 'POST',
+      headers: this.getAuthHeaders(),
+      body: JSON.stringify({ enabled }),
+    });
+    if (!res.ok) await this.throwTranslatedError(res, 'Toggle debug mode error');
+    return res.json() as Promise<{ success: boolean; debugMode: boolean }>;
+  }
+
+  async clearBackendLogs(): Promise<{ success: boolean }> {
+    if (!this._backendUrl) throw new Error('Backend not available');
+    const res = await this.fetchWithTimeout(`${this._backendUrl}/logs`, {
+      method: 'DELETE',
+      headers: this.getAuthHeaders(),
+    });
+    if (!res.ok) await this.throwTranslatedError(res, 'Clear backend logs error');
+    return res.json() as Promise<{ success: boolean }>;
+  }
 }
 
 export const backend = new BackendAdapter();

@@ -73,7 +73,6 @@ function resolveDebugModeResponse(raw: unknown): boolean {
 
 export const DiagnosticLogsPanel: React.FC<DiagnosticLogsPanelProps> = ({ t }) => {
   const language = useAppStore((state) => state.language);
-  const backendApiSecret = useAppStore((state) => state.backendApiSecret);
 
   const [frontendDebug, setFrontendDebug] = useState(() => {
     const enabled = sessionStorage.getItem('gsm:frontend-debug') === 'true';
@@ -94,18 +93,6 @@ export const DiagnosticLogsPanel: React.FC<DiagnosticLogsPanelProps> = ({ t }) =
   const [isExporting, setIsExporting] = useState(false);
   const [backendAvailable, setBackendAvailable] = useState(() => backend.isAvailable);
 
-  const getAuthHeaders = useCallback((): HeadersInit => {
-    const headers: Record<string, string> = {};
-    if (backendApiSecret) {
-      headers.Authorization = `Bearer ${backendApiSecret}`;
-    }
-    return headers;
-  }, [backendApiSecret]);
-
-  const backendApiUrl = useCallback((path: string): string => {
-    return `${backend.backendUrl ?? `${window.location.origin}/api`}${path}`;
-  }, []);
-
   useEffect(() => {
     const syncBackendAvailability = () => setBackendAvailable(backend.isAvailable);
     syncBackendAvailability();
@@ -122,23 +109,16 @@ export const DiagnosticLogsPanel: React.FC<DiagnosticLogsPanelProps> = ({ t }) =
 
     setIsRefreshing(true);
     try {
-      const response = await fetch(backendApiUrl('/logs?limit=2000'), {
-        headers: getAuthHeaders(),
-      });
-      if (!response.ok) {
-        throw new Error(`Fetch logs failed: ${response.status}`);
-      }
-      const raw = await response.json() as unknown;
+      const raw = await backend.fetchBackendLogs(2000);
       const logs = resolveLogsResponse(raw);
       setBackendEntries(logs);
-      const totalHeader = response.headers.get('X-Log-Count');
-      setBackendLogCount(totalHeader ? parseInt(totalHeader, 10) || logs.length : logs.length);
+      setBackendLogCount(logs.length);
     } catch (err) {
       logger.errorFromError('diagnosticLogs', 'Failed to fetch backend logs', err);
     } finally {
       setIsRefreshing(false);
     }
-  }, [backendApiUrl, backendAvailable, getAuthHeaders]);
+  }, [backendAvailable]);
 
   useEffect(() => {
     const onLogAdded = (event: Event) => {
@@ -164,12 +144,8 @@ export const DiagnosticLogsPanel: React.FC<DiagnosticLogsPanelProps> = ({ t }) =
 
     const fetchDebugState = async () => {
       try {
-        const response = await fetch(backendApiUrl('/logs/debug'), {
-          headers: getAuthHeaders(),
-        });
-        if (!response.ok) return;
-        const raw = await response.json() as unknown;
-        const debugMode = resolveDebugModeResponse(raw);
+        const result = await backend.fetchBackendDebugMode();
+        const debugMode = resolveDebugModeResponse(result);
         setBackendDebug(debugMode);
         sessionStorage.setItem('gsm:backend-debug', String(debugMode));
       } catch {
@@ -178,7 +154,7 @@ export const DiagnosticLogsPanel: React.FC<DiagnosticLogsPanelProps> = ({ t }) =
     };
 
     void fetchDebugState();
-  }, [backendApiUrl, backendAvailable, getAuthHeaders]);
+  }, [backendAvailable]);
 
   useEffect(() => {
     if (selectedScope === 'frontend') {
@@ -244,19 +220,8 @@ export const DiagnosticLogsPanel: React.FC<DiagnosticLogsPanelProps> = ({ t }) =
     const next = !backendDebug;
 
     try {
-      const response = await fetch(backendApiUrl('/logs/debug'), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...getAuthHeaders(),
-        },
-        body: JSON.stringify({ enabled: next }),
-      });
-      if (!response.ok) {
-        throw new Error(`Toggle backend debug failed: ${response.status}`);
-      }
-      const raw = await response.json() as unknown;
-      const debugMode = resolveDebugModeResponse(raw);
+      const result = await backend.setBackendDebugMode(next);
+      const debugMode = resolveDebugModeResponse(result);
       setBackendDebug(debugMode);
       sessionStorage.setItem('gsm:backend-debug', String(debugMode));
       if (debugMode) {
@@ -266,7 +231,7 @@ export const DiagnosticLogsPanel: React.FC<DiagnosticLogsPanelProps> = ({ t }) =
     } catch (err) {
       logger.errorFromError('diagnosticLogs', 'Failed to toggle backend debug mode', err);
     }
-  }, [backendApiUrl, backendAvailable, backendDebug, getAuthHeaders, refreshBackendLogs]);
+  }, [backendAvailable, backendDebug, refreshBackendLogs]);
 
   const handleClear = useCallback(async () => {
     if (selectedScope !== 'backend') {
@@ -276,20 +241,14 @@ export const DiagnosticLogsPanel: React.FC<DiagnosticLogsPanelProps> = ({ t }) =
 
     if (selectedScope !== 'frontend' && backendAvailable) {
       try {
-        const response = await fetch(backendApiUrl('/logs'), {
-          method: 'DELETE',
-          headers: getAuthHeaders(),
-        });
-        if (!response.ok) {
-          throw new Error(`Clear backend logs failed: ${response.status}`);
-        }
+        await backend.clearBackendLogs();
         setBackendEntries([]);
         setBackendLogCount(0);
       } catch (err) {
         logger.errorFromError('diagnosticLogs', 'Failed to clear backend logs', err);
       }
     }
-  }, [backendApiUrl, backendAvailable, getAuthHeaders, selectedScope]);
+  }, [backendAvailable, selectedScope]);
 
   const handleExport = useCallback(async () => {
     setIsExporting(true);
